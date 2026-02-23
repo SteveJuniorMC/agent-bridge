@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Agent Bridge</string>
+    <string name="accessibility_service_description">Allows AI agents in Termux to control the phone via taps, swipes, typing, and screen reading. Enable this service, then send commands from Termux using intents or TCP socket.</string>
+    <string name="service_status">Service Status</string>
+    <string name="service_enabled">Service is ENABLED</string>
+    <string name="service_disabled">Service is DISABLED</string>
+    <string name="btn_open_settings">Open Accessibility Settings</string>
+    <string name="tcp_status">TCP Server: port 8765</string>
+    <string name="usage_title">Usage from Termux</string>
+    <string name="usage_tap">am broadcast -n com.agentbridge/.CommandReceiver --es cmd tap --ef x 540.0 --ef y 1200.0</string>
+    <string name="usage_dump">echo \'{"cmd":"dump_ui"}\' | nc -q1 127.0.0.1 8765</string>
+</resources>
