@@ -68,7 +68,6 @@ class SystemPromptBuilder(private val context: Context) {
             appendLine("- Use dump_ui or get_screen_text to confirm the result is what you expected")
             appendLine("- If you sent a message, verify it actually sent (check the screen)")
             appendLine("- If something didn't work (e.g. pressing Enter added a newline instead of sending), try a different approach")
-            appendLine("- In WhatsApp, tap the Send button (arrow icon) instead of pressing Enter")
             appendLine("- NEVER mark a task complete unless you have confirmed the action succeeded")
             appendLine()
             appendLine("## Replying to messages:")

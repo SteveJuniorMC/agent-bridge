@@ -58,6 +58,20 @@ class TaskActivity : AppCompatActivity() {
             return
         }
 
+        // Start service if not running
+        if (AgentForegroundService.instance == null) {
+            AgentForegroundService.start(this)
+            // Wait briefly for service to initialize
+            Thread {
+                Thread.sleep(1000)
+                runOnUiThread { enqueueAndClear(description) }
+            }.start()
+        } else {
+            enqueueAndClear(description)
+        }
+    }
+
+    private fun enqueueAndClear(description: String) {
         val service = AgentForegroundService.instance
         if (service != null) {
             service.enqueueTask(description)
@@ -65,7 +79,7 @@ class TaskActivity : AppCompatActivity() {
             Toast.makeText(this, "Task enqueued", Toast.LENGTH_SHORT).show()
             loadTasks()
         } else {
-            Toast.makeText(this, "Agent is not running. Start it from the main screen.", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Failed to start agent service", Toast.LENGTH_LONG).show()
         }
     }
 
