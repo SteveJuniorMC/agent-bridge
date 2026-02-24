@@ -136,6 +136,11 @@ class AgentLoop(private val context: Context) {
         taskDao.updateTaskStatus(task.id, "running")
         statusListener?.onTaskStarted(task)
 
+        // Set notification context on tool executor for reply_notification
+        toolExecutor.currentNotificationKey = task.notificationKey
+        toolExecutor.currentContact = task.contact
+        toolExecutor.currentPlatform = task.platform
+
         val apiKey = prefs.getString("api_key", null)
         val model = prefs.getString("model", "google/gemini-2.0-flash-001") ?: "google/gemini-2.0-flash-001"
 
@@ -156,7 +161,7 @@ class AgentLoop(private val context: Context) {
 
         // Add trigger context
         val triggerContent = when (task.type) {
-            TaskType.NOTIFICATION -> "You received a new message from ${task.contact} on ${task.platform}: \"${task.message}\"\n\nDecide what to do next."
+            TaskType.NOTIFICATION -> "You received a new message from ${task.contact} on ${task.platform}: \"${task.message}\"\n\nTo reply, use the reply_notification tool — it sends your reply directly through the notification without opening any app. If it fails (can_reply=false), fall back to send_whatsapp or open the app manually."
             TaskType.MANUAL -> "The user asked you to: ${task.description}\n\nDecide what to do next."
         }
         messages.add(OpenRouterClient.ChatMessage(role = "user", content = triggerContent))
@@ -215,6 +220,7 @@ class AgentLoop(private val context: Context) {
                         }
 
                         // Save outgoing message if we typed/sent something
+                        // (reply_notification saves its own messages via ToolExecutor)
                         if (toolName == "type_text" && task.contact != null) {
                             val typedText = try {
                                 com.google.gson.Gson().fromJson(toolArgs, Map::class.java)["text"]?.toString()

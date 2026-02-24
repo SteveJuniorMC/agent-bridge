@@ -52,6 +52,9 @@ object ToolRegistry {
             tool("open_notifications", "Pull down the notification shade") {},
 
             // Messaging
+            tool("reply_notification", "Reply to the notification that triggered this task. This is the FASTEST and most RELIABLE way to reply to incoming messages on WhatsApp, Telegram, Instagram, Messenger, and other messaging apps. It sends the reply directly through the notification without opening any app. ALWAYS try this first before using send_whatsapp or manual screen interaction. If this fails (returns can_reply=false), fall back to send_whatsapp or opening the app manually.") {
+                requiredString("text", "The reply message text")
+            },
             tool("send_sms", "Send an SMS text message") {
                 requiredString("to", "Phone number to send to")
                 requiredString("message", "Message text")
@@ -60,7 +63,7 @@ object ToolRegistry {
                 optionalString("from", "Filter by sender phone number")
                 optionalNumber("limit", "Max messages to return (default 10)")
             },
-            tool("send_whatsapp", "Open WhatsApp chat with a prefilled message via deep link") {
+            tool("send_whatsapp", "Open WhatsApp chat with a prefilled message via deep link. NOTE: This only PREFILLS the message — it does NOT send it. After calling this, you must use click_text to tap the Send button in WhatsApp. Prefer reply_notification for replying to incoming messages instead.") {
                 requiredString("to", "Phone number (with country code)")
                 requiredString("message", "Message text")
             },

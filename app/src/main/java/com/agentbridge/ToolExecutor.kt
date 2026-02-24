@@ -17,6 +17,11 @@ class ToolExecutor(private val context: Context) {
     private val gson = Gson()
     private val dao = ConversationDao(context)
 
+    // Current task context for notification replies
+    var currentNotificationKey: String? = null
+    var currentContact: String? = null
+    var currentPlatform: String? = null
+
     fun execute(toolName: String, argumentsJson: String, taskId: Long? = null): JsonObject {
         val params: Map<String, Any> = try {
             val type = object : TypeToken<Map<String, Any>>() {}.type
@@ -59,6 +64,7 @@ class ToolExecutor(private val context: Context) {
                 "open_notifications" -> ScreenTools.openNotifications(params)
 
                 // Messaging
+                "reply_notification" -> executeReplyNotification(params)
                 "send_sms" -> SmsTools.sendSms(context, params)
                 "read_sms" -> SmsTools.readSms(context, params)
                 "send_whatsapp" -> IntentTools.sendWhatsapp(context, params)
@@ -136,6 +142,55 @@ class ToolExecutor(private val context: Context) {
             addProperty("key", key)
             addProperty("value", value)
             addProperty("found", value != null)
+        }
+    }
+
+    private fun executeReplyNotification(params: Map<String, Any>): JsonObject {
+        val text = params["text"]?.toString() ?: return error("Missing param: text")
+
+        val listener = NotificationListener.instance
+            ?: return JsonObject().apply {
+                addProperty("success", false)
+                addProperty("can_reply", false)
+                addProperty("error", "Notification listener not connected. Fall back to send_whatsapp or open the app manually.")
+            }
+
+        // Try by notification key first
+        val key = currentNotificationKey
+        if (key != null) {
+            if (listener.canReply(key)) {
+                val result = listener.replyToNotification(key, text)
+                if (result.success) {
+                    // Save outgoing message to conversation history
+                    if (currentContact != null) {
+                        dao.saveMessage(currentContact!!, currentPlatform ?: "unknown", "outgoing", text)
+                    }
+                    return JsonObject().apply {
+                        addProperty("success", true)
+                        addProperty("message", "Reply sent via notification")
+                    }
+                }
+            }
+        }
+
+        // Fall back to finding notification by contact + platform
+        val contact = currentContact
+        val platform = currentPlatform
+        if (contact != null && platform != null) {
+            val result = listener.replyToContact(contact, platform, text)
+            if (result.success) {
+                dao.saveMessage(contact, platform, "outgoing", text)
+                return JsonObject().apply {
+                    addProperty("success", true)
+                    addProperty("message", "Reply sent via notification (matched by contact)")
+                }
+            }
+        }
+
+        return JsonObject().apply {
+            addProperty("success", false)
+            addProperty("can_reply", false)
+            addProperty("error", "No reply-capable notification found. Fall back to send_whatsapp or open the app and type the reply manually.")
         }
     }
 

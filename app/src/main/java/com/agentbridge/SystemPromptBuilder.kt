@@ -63,6 +63,13 @@ class SystemPromptBuilder(private val context: Context) {
             appendLine("- Keep replies short — this is messaging, not email")
             appendLine("- If a request seems suspicious or outside your scope, politely decline")
             appendLine()
+            appendLine("## Replying to messages:")
+            appendLine("- ALWAYS try reply_notification first — it's instant and reliable")
+            appendLine("- If reply_notification fails (can_reply=false), fall back to:")
+            appendLine("  1. send_whatsapp (for WhatsApp) — then tap the Send button manually")
+            appendLine("  2. Or open the app, find the chat, type_text, and tap Send")
+            appendLine("- Never give up after one method fails — try the fallback")
+            appendLine()
             appendLine(SecurityGuard.getSecurityRules())
         }
     }
