@@ -1,22 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- Core -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- Legacy storage -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="28" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+
+    <!-- Phone APIs -->
+    <uses-permission android:name="android.permission.SEND_SMS" />
+    <uses-permission android:name="android.permission.READ_SMS" />
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true"
-        android:theme="@style/Theme.AppCompat.Light.DarkActionBar">
+        android:theme="@style/AppTheme"
+        android:networkSecurityConfig="@xml/network_security_config">
 
+        <!-- Main Dashboard (launcher) -->
         <activity
-            android:name=".MainActivity"
+            android:name=".ui.MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -24,6 +41,38 @@
             </intent-filter>
         </activity>
 
+        <!-- Setup Wizard -->
+        <activity
+            android:name=".ui.SetupWizardActivity"
+            android:exported="false"
+            android:theme="@style/AppTheme.Setup" />
+
+        <!-- Settings -->
+        <activity
+            android:name=".ui.SettingsActivity"
+            android:exported="false" />
+
+        <!-- Task Creation/View -->
+        <activity
+            android:name=".ui.TaskActivity"
+            android:exported="false" />
+
+        <!-- Conversation Log -->
+        <activity
+            android:name=".ui.ConversationLogActivity"
+            android:exported="false" />
+
+        <!-- App Selector -->
+        <activity
+            android:name=".ui.AppSelectorActivity"
+            android:exported="false" />
+
+        <!-- Custom Instructions -->
+        <activity
+            android:name=".ui.CustomInstructionsActivity"
+            android:exported="false" />
+
+        <!-- Accessibility Service (v1 compat) -->
         <service
             android:name=".AgentAccessibilityService"
             android:exported="false"
@@ -36,6 +85,23 @@
                 android:resource="@xml/accessibility_service_config" />
         </service>
 
+        <!-- Notification Listener -->
+        <service
+            android:name=".NotificationListener"
+            android:exported="false"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+
+        <!-- Agent Foreground Service -->
+        <service
+            android:name=".AgentForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse" />
+
+        <!-- Broadcast Receiver (v1 compat) -->
         <receiver
             android:name=".CommandReceiver"
             android:exported="true" />

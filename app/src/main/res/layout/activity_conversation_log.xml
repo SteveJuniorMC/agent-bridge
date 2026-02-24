@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background">
+
+    <com.google.android.material.appbar.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:theme="@style/ThemeOverlay.MaterialComponents.Dark.ActionBar">
+
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbarConversations"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="@color/primary"
+            app:title="Conversations"
+            app:titleTextColor="@color/white"
+            app:navigationIcon="?attr/homeAsUpIndicator" />
+
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+        <!-- Search / Filter Bar -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="16dp"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="2dp"
+            app:cardBackgroundColor="@color/card_background">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingStart="16dp"
+                android:paddingEnd="8dp">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@android:drawable/ic_menu_search"
+                    android:contentDescription="Search"
+                    android:layout_marginEnd="8dp" />
+
+                <EditText
+                    android:id="@+id/etSearchConversations"
+                    android:layout_width="0dp"
+                    android:layout_height="44dp"
+                    android:layout_weight="1"
+                    android:hint="Search conversations..."
+                    android:textSize="14sp"
+                    android:background="@android:color/transparent"
+                    android:inputType="text"
+                    android:imeOptions="actionSearch"
+                    android:maxLines="1" />
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Platform filter chips -->
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:scrollbars="none"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:layout_marginBottom="8dp"
+            android:clipToPadding="false">
+
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/chipGroupPlatforms"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:singleSelection="true">
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipAll"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="All"
+                    style="@style/Widget.MaterialComponents.Chip.Choice"
+                    android:checked="true" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipWhatsapp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="WhatsApp"
+                    style="@style/Widget.MaterialComponents.Chip.Choice" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipSms"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="SMS"
+                    style="@style/Widget.MaterialComponents.Chip.Choice" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipTelegram"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Telegram"
+                    style="@style/Widget.MaterialComponents.Chip.Choice" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipOther"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Other"
+                    style="@style/Widget.MaterialComponents.Chip.Choice" />
+
+            </com.google.android.material.chip.ChipGroup>
+
+        </HorizontalScrollView>
+
+        <!-- Conversation List -->
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:clipToPadding="false">
+
+            <LinearLayout
+                android:id="@+id/layoutConversationList"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:paddingBottom="16dp">
+
+                <!-- Conversation items will be added here programmatically -->
+                <!-- Each item structure:
+                     CardView containing:
+                       - Contact avatar/initial circle
+                       - Contact name (bold)
+                       - Platform badge (WhatsApp, SMS, etc.)
+                       - Last message preview (truncated)
+                       - Timestamp (right-aligned)
+                       - Unread indicator (optional)
+                -->
+
+                <TextView
+                    android:id="@+id/tvNoConversations"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="No conversations yet. The agent will log conversations here as it handles messages."
+                    android:textColor="@color/text_secondary"
+                    android:textSize="14sp"
+                    android:gravity="center"
+                    android:padding="32dp" />
+
+            </LinearLayout>
+
+        </ScrollView>
+
+    </LinearLayout>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
