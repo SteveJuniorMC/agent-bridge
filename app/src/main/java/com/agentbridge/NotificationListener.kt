@@ -22,6 +22,11 @@ class NotificationListener : NotificationListenerService() {
     // Store active notifications keyed by notification key
     private val activeNotifications = ConcurrentHashMap<String, StatusBarNotification>()
 
+    // Track recently handled messages to prevent duplicates
+    // Key: "contact|package|messageHash", Value: timestamp
+    private val recentlyHandled = ConcurrentHashMap<String, Long>()
+    private val DEDUP_WINDOW_MS = 30_000L // 30 seconds
+
     override fun onListenerConnected() {
         super.onListenerConnected()
         instance = this
@@ -65,6 +70,19 @@ class NotificationListener : NotificationListenerService() {
         // Skip empty or very short messages
         if (text.isBlank() || text.length < 2) return
 
+        // Deduplicate — skip if we recently handled this exact message
+        val dedupKey = "$title|$pkg|${text.hashCode()}"
+        val now = System.currentTimeMillis()
+        val lastHandled = recentlyHandled[dedupKey]
+        if (lastHandled != null && now - lastHandled < DEDUP_WINDOW_MS) {
+            Log.d(TAG, "Skipping duplicate notification from $title on $pkg")
+            return
+        }
+        recentlyHandled[dedupKey] = now
+
+        // Prune old entries
+        recentlyHandled.entries.removeIf { now - it.value > DEDUP_WINDOW_MS * 2 }
+
         Log.i(TAG, "New message from $title on $pkg: ${text.take(100)}")
 
         foregroundService.handleIncomingMessage(
@@ -106,6 +124,13 @@ class NotificationListener : NotificationListenerService() {
                 action.actionIntent.send(applicationContext, 0, intent)
 
                 Log.i(TAG, "Reply sent via notification to key=$notificationKey: ${text.take(100)}")
+
+                // Cancel the notification to prevent it re-triggering onNotificationPosted
+                try {
+                    cancelNotification(notificationKey)
+                } catch (e: Exception) {
+                    Log.w(TAG, "Could not cancel notification: ${e.message}")
+                }
 
                 // Remove from active since the reply has been sent
                 activeNotifications.remove(notificationKey)
