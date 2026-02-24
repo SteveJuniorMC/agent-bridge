@@ -9,12 +9,10 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.view.View
-import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.LinearLayout
-import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -36,7 +34,7 @@ class SetupWizardActivity : AppCompatActivity() {
 
     // Step 1 - API
     private lateinit var etApiKey: EditText
-    private lateinit var spinnerModel: Spinner
+    private lateinit var etModel: EditText
     private lateinit var btnTestConnection: Button
     private lateinit var tvConnectionStatus: TextView
 
@@ -65,13 +63,6 @@ class SetupWizardActivity : AppCompatActivity() {
     private var currentStep = 0
     private var connectionTested = false
 
-    private val models = arrayOf(
-        "google/gemini-2.0-flash-001",
-        "anthropic/claude-3.5-sonnet",
-        "openai/gpt-4o-mini",
-        "meta-llama/llama-3.1-8b-instruct"
-    )
-
     private data class AppEntry(
         val packageName: String,
         val displayName: String,
@@ -96,7 +87,6 @@ class SetupWizardActivity : AppCompatActivity() {
         taskDao = TaskDao(this)
 
         initViews()
-        setupModelSpinner()
         setupStep1()
         setupStep2()
         setupStep3()
@@ -112,7 +102,7 @@ class SetupWizardActivity : AppCompatActivity() {
         layoutStep4 = findViewById(R.id.layoutStep4)
 
         etApiKey = findViewById(R.id.etApiKey)
-        spinnerModel = findViewById(R.id.spinnerModel)
+        etModel = findViewById(R.id.etModel)
         btnTestConnection = findViewById(R.id.btnTestConnection)
         tvConnectionStatus = findViewById(R.id.tvConnectionStatus)
 
@@ -135,12 +125,6 @@ class SetupWizardActivity : AppCompatActivity() {
         tvStepIndicator = findViewById(R.id.tvStepIndicator)
     }
 
-    private fun setupModelSpinner() {
-        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, models)
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        spinnerModel.adapter = adapter
-    }
-
     // ---- Step 1: API Configuration ----
 
     private fun setupStep1() {
@@ -150,7 +134,11 @@ class SetupWizardActivity : AppCompatActivity() {
                 Toast.makeText(this, "Please enter an API key", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            val model = models[spinnerModel.selectedItemPosition]
+            val model = etModel.text.toString().trim()
+            if (model.isEmpty()) {
+                Toast.makeText(this, "Please enter a model name", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
             tvConnectionStatus.text = "Testing connection..."
             tvConnectionStatus.setTextColor(0xFF999999.toInt())
             btnTestConnection.isEnabled = false
@@ -313,7 +301,8 @@ class SetupWizardActivity : AppCompatActivity() {
         btnStartAgent.visibility = if (isLastStep) View.VISIBLE else View.GONE
 
         val apiKeySet = etApiKey.text.toString().trim().isNotEmpty()
-        val canStart = apiKeySet && allPermissionsGranted()
+        val modelSet = etModel.text.toString().trim().isNotEmpty()
+        val canStart = apiKeySet && modelSet && allPermissionsGranted()
         btnStartAgent.isEnabled = canStart
     }
 
@@ -321,7 +310,7 @@ class SetupWizardActivity : AppCompatActivity() {
         val prefs = getSharedPreferences("agent_bridge_prefs", MODE_PRIVATE)
         prefs.edit().apply {
             putString("api_key", etApiKey.text.toString().trim())
-            putString("model", models[spinnerModel.selectedItemPosition])
+            putString("model", etModel.text.toString().trim())
             putString("custom_instructions", etCustomInstructions.text.toString().trim())
             putBoolean("setup_complete", true)
             apply()

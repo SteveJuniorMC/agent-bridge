@@ -81,21 +81,21 @@
 
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- Model Spinner -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Model"
-                android:textSize="14sp"
-                android:textColor="@color/text_primary"
-                android:layout_marginBottom="4dp" />
-
-            <Spinner
-                android:id="@+id/spinnerModel"
+            <!-- Model -->
+            <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:layout_marginBottom="16dp"
-                android:background="@android:drawable/btn_dropdown" />
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:hint="Model (e.g. google/gemini-2.0-flash-001)">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etModel"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="text"
+                    android:singleLine="true" />
+
+            </com.google.android.material.textfield.TextInputLayout>
 
             <!-- Custom Instructions -->
             <com.google.android.material.textfield.TextInputLayout
