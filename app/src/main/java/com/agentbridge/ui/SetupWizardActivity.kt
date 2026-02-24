@@ -43,10 +43,14 @@ class SetupWizardActivity : AppCompatActivity() {
     private lateinit var cbNotificationListener: CheckBox
     private lateinit var cbOverlay: CheckBox
     private lateinit var cbNotifications: CheckBox
+    private lateinit var cbContacts: CheckBox
+    private lateinit var cbSms: CheckBox
     private lateinit var btnGrantAccessibility: Button
     private lateinit var btnGrantNotificationListener: Button
     private lateinit var btnGrantOverlay: Button
     private lateinit var btnGrantNotifications: Button
+    private lateinit var btnGrantContacts: Button
+    private lateinit var btnGrantSms: Button
 
     // Step 3 - App monitoring
     private lateinit var layoutAppToggles: LinearLayout
@@ -114,6 +118,10 @@ class SetupWizardActivity : AppCompatActivity() {
         btnGrantNotificationListener = findViewById(R.id.btnGrantNotificationListener)
         btnGrantOverlay = findViewById(R.id.btnGrantOverlay)
         btnGrantNotifications = findViewById(R.id.btnGrantNotifications)
+        cbContacts = findViewById(R.id.cbContacts)
+        cbSms = findViewById(R.id.cbSms)
+        btnGrantContacts = findViewById(R.id.btnGrantContacts)
+        btnGrantSms = findViewById(R.id.btnGrantSms)
 
         layoutAppToggles = findViewById(R.id.layoutAppToggles)
 
@@ -185,6 +193,12 @@ class SetupWizardActivity : AppCompatActivity() {
                 requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1001)
             }
         }
+        btnGrantContacts.setOnClickListener {
+            requestPermissions(arrayOf(Manifest.permission.READ_CONTACTS), 1002)
+        }
+        btnGrantSms.setOnClickListener {
+            requestPermissions(arrayOf(Manifest.permission.READ_SMS, Manifest.permission.SEND_SMS), 1003)
+        }
     }
 
     private fun checkPermissions() {
@@ -216,6 +230,22 @@ class SetupWizardActivity : AppCompatActivity() {
             btnGrantNotifications.visibility = View.GONE
         }
 
+        // Contacts permission
+        val contactsGranted = ContextCompat.checkSelfPermission(
+            this, Manifest.permission.READ_CONTACTS
+        ) == PackageManager.PERMISSION_GRANTED
+        cbContacts.isChecked = contactsGranted
+        btnGrantContacts.visibility = if (contactsGranted) View.GONE else View.VISIBLE
+
+        // SMS permission
+        val smsGranted = ContextCompat.checkSelfPermission(
+            this, Manifest.permission.READ_SMS
+        ) == PackageManager.PERMISSION_GRANTED && ContextCompat.checkSelfPermission(
+            this, Manifest.permission.SEND_SMS
+        ) == PackageManager.PERMISSION_GRANTED
+        cbSms.isChecked = smsGranted
+        btnGrantSms.visibility = if (smsGranted) View.GONE else View.VISIBLE
+
         updateNavigation()
     }
 
@@ -229,7 +259,9 @@ class SetupWizardActivity : AppCompatActivity() {
         return cbAccessibility.isChecked &&
                 cbNotificationListener.isChecked &&
                 cbOverlay.isChecked &&
-                cbNotifications.isChecked
+                cbNotifications.isChecked &&
+                cbContacts.isChecked &&
+                cbSms.isChecked
     }
 
     // ---- Step 3: App Monitoring ----
@@ -344,7 +376,7 @@ class SetupWizardActivity : AppCompatActivity() {
         grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == 1001) {
+        if (requestCode in listOf(1001, 1002, 1003)) {
             checkPermissions()
         }
     }

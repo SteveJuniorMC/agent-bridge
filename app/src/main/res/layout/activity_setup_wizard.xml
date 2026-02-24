@@ -228,6 +228,58 @@
 
                 </LinearLayout>
 
+                <!-- Contacts Permission -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="8dp">
+
+                    <CheckBox
+                        android:id="@+id/cbContacts"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Contacts"
+                        android:clickable="false"
+                        android:focusable="false" />
+
+                    <Button
+                        android:id="@+id/btnGrantContacts"
+                        android:layout_width="wrap_content"
+                        android:layout_height="36dp"
+                        android:text="Grant"
+                        android:textSize="12sp" />
+
+                </LinearLayout>
+
+                <!-- SMS Permission -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="8dp">
+
+                    <CheckBox
+                        android:id="@+id/cbSms"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="SMS (Read &amp; Send)"
+                        android:clickable="false"
+                        android:focusable="false" />
+
+                    <Button
+                        android:id="@+id/btnGrantSms"
+                        android:layout_width="wrap_content"
+                        android:layout_height="36dp"
+                        android:text="Grant"
+                        android:textSize="12sp" />
+
+                </LinearLayout>
+
             </LinearLayout>
 
             <!-- Step 3: App Monitoring -->
