@@ -1,5 +1,6 @@
 package com.agentbridge.ui
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.MenuItem
 import android.widget.Button
@@ -47,6 +48,11 @@ class SettingsActivity : AppCompatActivity() {
             }
         }
 
+        // Monitored apps
+        findViewById<Button>(R.id.btnMonitoredApps).setOnClickListener {
+            startActivity(Intent(this, AppSelectorActivity::class.java))
+        }
+
         // Save button
         btnSave.setOnClickListener {
             saveSettings()
@@ -63,7 +69,7 @@ class SettingsActivity : AppCompatActivity() {
     private fun loadSettings() {
         val prefs = getSharedPreferences("agent_bridge_prefs", MODE_PRIVATE)
         etApiKey.setText(prefs.getString("api_key", ""))
-        etModel.setText(prefs.getString("model", "google/gemini-2.0-flash-001"))
+        etModel.setText(prefs.getString("model", ""))
         etCustomInstructions.setText(prefs.getString("custom_instructions", ""))
     }
 
