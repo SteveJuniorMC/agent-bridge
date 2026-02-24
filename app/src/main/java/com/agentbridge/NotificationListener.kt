@@ -27,6 +27,11 @@ class NotificationListener : NotificationListenerService() {
     private val recentlyHandled = ConcurrentHashMap<String, Long>()
     private val DEDUP_WINDOW_MS = 30_000L // 30 seconds
 
+    // Cooldown per contact after we reply — prevents re-triggering from notification updates
+    // Key: "contact|package", Value: timestamp of last reply
+    private val replyCooldowns = ConcurrentHashMap<String, Long>()
+    private val REPLY_COOLDOWN_MS = 60_000L // 60 seconds
+
     override fun onListenerConnected() {
         super.onListenerConnected()
         instance = this
@@ -70,9 +75,18 @@ class NotificationListener : NotificationListenerService() {
         // Skip empty or very short messages
         if (text.isBlank() || text.length < 2) return
 
+        val now = System.currentTimeMillis()
+
+        // Cooldown — skip if we recently replied to this contact
+        val cooldownKey = "$title|$pkg"
+        val lastReply = replyCooldowns[cooldownKey]
+        if (lastReply != null && now - lastReply < REPLY_COOLDOWN_MS) {
+            Log.d(TAG, "Skipping notification from $title on $pkg (reply cooldown)")
+            return
+        }
+
         // Deduplicate — skip if we recently handled this exact message
         val dedupKey = "$title|$pkg|${text.hashCode()}"
-        val now = System.currentTimeMillis()
         val lastHandled = recentlyHandled[dedupKey]
         if (lastHandled != null && now - lastHandled < DEDUP_WINDOW_MS) {
             Log.d(TAG, "Skipping duplicate notification from $title on $pkg")
@@ -82,6 +96,7 @@ class NotificationListener : NotificationListenerService() {
 
         // Prune old entries
         recentlyHandled.entries.removeIf { now - it.value > DEDUP_WINDOW_MS * 2 }
+        replyCooldowns.entries.removeIf { now - it.value > REPLY_COOLDOWN_MS * 2 }
 
         Log.i(TAG, "New message from $title on $pkg: ${text.take(100)}")
 
@@ -124,6 +139,12 @@ class NotificationListener : NotificationListenerService() {
                 action.actionIntent.send(applicationContext, 0, intent)
 
                 Log.i(TAG, "Reply sent via notification to key=$notificationKey: ${text.take(100)}")
+
+                // Set cooldown for this contact to block re-triggers
+                val contact = sbn.notification.extras?.getString(Notification.EXTRA_TITLE)
+                if (contact != null) {
+                    replyCooldowns["$contact|${sbn.packageName}"] = System.currentTimeMillis()
+                }
 
                 // Cancel the notification to prevent it re-triggering onNotificationPosted
                 try {
