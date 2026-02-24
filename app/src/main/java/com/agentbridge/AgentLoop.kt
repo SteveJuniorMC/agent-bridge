@@ -21,6 +21,7 @@ class AgentLoop(private val context: Context) {
         val description: String,
         val contact: String? = null,
         val platform: String? = null,
+        val packageName: String? = null,
         val message: String? = null,
         val notificationKey: String? = null
     )
@@ -99,6 +100,7 @@ class AgentLoop(private val context: Context) {
             description = "New message from $contact: ${message.take(200)}",
             contact = contact,
             platform = platformName(platform),
+            packageName = platform,
             message = message,
             notificationKey = notificationKey
         )
@@ -145,6 +147,7 @@ class AgentLoop(private val context: Context) {
         toolExecutor.currentNotificationKey = task.notificationKey
         toolExecutor.currentContact = task.contact
         toolExecutor.currentPlatform = task.platform
+        toolExecutor.currentPackageName = task.packageName
 
         val apiKey = prefs.getString("api_key", null)
         val model = prefs.getString("model", "google/gemini-2.0-flash-001") ?: "google/gemini-2.0-flash-001"

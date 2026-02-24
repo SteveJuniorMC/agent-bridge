@@ -63,8 +63,8 @@ object ToolRegistry {
                 optionalString("from", "Filter by sender phone number")
                 optionalNumber("limit", "Max messages to return (default 10)")
             },
-            tool("send_whatsapp", "Open WhatsApp chat with a prefilled message via deep link. NOTE: This only PREFILLS the message — it does NOT send it. After calling this, you must use click_text to tap the Send button in WhatsApp. Prefer reply_notification for replying to incoming messages instead.") {
-                requiredString("to", "Phone number (with country code)")
+            tool("send_whatsapp", "Open WhatsApp chat with a prefilled message. Accepts a contact name OR phone number. NOTE: This PREFILLS the message but does NOT send it — after calling this, you must use click_text to tap the Send button. Prefer reply_notification for replying to incoming messages.") {
+                requiredString("to", "Contact name or phone number (with country code)")
                 requiredString("message", "Message text")
             },
 

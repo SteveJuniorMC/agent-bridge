@@ -3,6 +3,7 @@ package com.agentbridge.tools
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.provider.ContactsContract
 import com.google.gson.JsonObject
 
 object IntentTools {
@@ -76,9 +77,15 @@ object IntentTools {
         val message = params["message"]?.toString() ?: return error("Missing param: message")
 
         return try {
-            // Clean phone number (remove spaces, dashes, etc.)
-            val cleanNumber = to.replace(Regex("[^0-9+]"), "")
-            val uri = Uri.parse("https://wa.me/$cleanNumber?text=${Uri.encode(message)}")
+            // If 'to' looks like a phone number, use it directly; otherwise look up contact
+            val phoneNumber = if (to.matches(Regex(".*\\d{4,}.*"))) {
+                to.replace(Regex("[^0-9+]"), "")
+            } else {
+                lookupPhoneNumber(context, to)
+                    ?: return error("Could not find phone number for contact: $to")
+            }
+
+            val uri = Uri.parse("https://wa.me/$phoneNumber?text=${Uri.encode(message)}")
             val intent = Intent(Intent.ACTION_VIEW, uri).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
@@ -86,11 +93,31 @@ object IntentTools {
 
             JsonObject().apply {
                 addProperty("success", true)
-                addProperty("message", "WhatsApp opened for $cleanNumber with prefilled message")
+                addProperty("message", "WhatsApp opened for $phoneNumber with prefilled message. Tap the Send button to send.")
             }
         } catch (e: Exception) {
             error("Failed to open WhatsApp: ${e.message}")
         }
+    }
+
+    private fun lookupPhoneNumber(context: Context, contactName: String): String? {
+        try {
+            val cursor = context.contentResolver.query(
+                ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                arrayOf(ContactsContract.CommonDataKinds.Phone.NUMBER),
+                "${ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME} LIKE ?",
+                arrayOf("%$contactName%"),
+                null
+            )
+            cursor?.use {
+                if (it.moveToFirst()) {
+                    return it.getString(0)?.replace(Regex("[^0-9+]"), "")
+                }
+            }
+        } catch (e: Exception) {
+            // Permission not granted or other error
+        }
+        return null
     }
 
     private fun error(msg: String): JsonObject {
