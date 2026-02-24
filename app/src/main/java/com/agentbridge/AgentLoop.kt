@@ -136,6 +136,11 @@ class AgentLoop(private val context: Context) {
         taskDao.updateTaskStatus(task.id, "running")
         statusListener?.onTaskStarted(task)
 
+        // Pause listener to prevent notification updates from re-triggering
+        if (task.type == TaskType.NOTIFICATION) {
+            NotificationListener.instance?.paused = true
+        }
+
         // Set notification context on tool executor for reply_notification
         toolExecutor.currentNotificationKey = task.notificationKey
         toolExecutor.currentContact = task.contact
@@ -263,6 +268,12 @@ class AgentLoop(private val context: Context) {
         if (!done && steps >= MAX_STEPS) {
             failTask(task, "Max steps ($MAX_STEPS) reached")
         }
+
+        // Dismiss the notification and unpause listener
+        if (task.type == TaskType.NOTIFICATION && task.notificationKey != null) {
+            NotificationListener.instance?.dismissNotification(task.notificationKey)
+        }
+        NotificationListener.instance?.paused = false
 
         client.shutdown()
         isProcessing.set(false)

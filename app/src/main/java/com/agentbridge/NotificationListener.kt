@@ -22,9 +22,9 @@ class NotificationListener : NotificationListenerService() {
     // Store active notifications keyed by notification key
     private val activeNotifications = ConcurrentHashMap<String, StatusBarNotification>()
 
-    // Track last processed message text per contact to avoid re-processing
-    // Key: "contact|package", Value: message text
-    private val lastProcessedText = ConcurrentHashMap<String, String>()
+    // When true, notifications are stored but not forwarded to the agent
+    @Volatile
+    var paused = false
 
     override fun onListenerConnected() {
         super.onListenerConnected()
@@ -36,7 +36,6 @@ class NotificationListener : NotificationListenerService() {
         super.onListenerDisconnected()
         instance = null
         activeNotifications.clear()
-        lastProcessedText.clear()
         Log.i(TAG, "Notification listener disconnected")
     }
 
@@ -51,6 +50,12 @@ class NotificationListener : NotificationListenerService() {
         // Always store notifications that have a reply action (for reply_notification tool)
         if (hasReplyAction(sbn)) {
             activeNotifications[sbn.key] = sbn
+        }
+
+        // Don't enqueue tasks while paused
+        if (paused) {
+            Log.d(TAG, "Listener paused, skipping enqueue for ${sbn.key}")
+            return
         }
 
         // Check if this app is monitored
@@ -70,14 +75,6 @@ class NotificationListener : NotificationListenerService() {
         // Skip empty or very short messages
         if (text.isBlank() || text.length < 2) return
 
-        // Skip if we already processed this exact message from this contact
-        val contactKey = "$title|$pkg"
-        if (lastProcessedText[contactKey] == text) {
-            Log.d(TAG, "Skipping already processed message from $title on $pkg")
-            return
-        }
-        lastProcessedText[contactKey] = text
-
         Log.i(TAG, "New message from $title on $pkg: ${text.take(100)}")
 
         foregroundService.handleIncomingMessage(
@@ -91,17 +88,10 @@ class NotificationListener : NotificationListenerService() {
     override fun onNotificationRemoved(sbn: StatusBarNotification?) {
         sbn ?: return
         activeNotifications.remove(sbn.key)
-
-        // Clear processed text so future messages from this contact are accepted
-        val title = sbn.notification.extras?.getString(Notification.EXTRA_TITLE)
-        if (title != null) {
-            lastProcessedText.remove("$title|${sbn.packageName}")
-        }
     }
 
     /**
      * Reply to a notification using its RemoteInput action.
-     * Returns a result describing what happened.
      */
     fun replyToNotification(notificationKey: String, text: String): ReplyResult {
         val sbn = activeNotifications[notificationKey]
@@ -114,7 +104,6 @@ class NotificationListener : NotificationListenerService() {
             val remoteInputs = action.remoteInputs
             if (remoteInputs.isNullOrEmpty()) continue
 
-            // Found a reply action
             return try {
                 val intent = Intent()
                 val bundle = Bundle()
@@ -125,8 +114,6 @@ class NotificationListener : NotificationListenerService() {
                 action.actionIntent.send(applicationContext, 0, intent)
 
                 Log.i(TAG, "Reply sent via notification to key=$notificationKey: ${text.take(100)}")
-
-                // Remove from active since the reply has been sent
                 activeNotifications.remove(notificationKey)
 
                 ReplyResult(true, "Reply sent successfully")
@@ -140,8 +127,20 @@ class NotificationListener : NotificationListenerService() {
     }
 
     /**
+     * Cancel/dismiss a notification by key.
+     */
+    fun dismissNotification(notificationKey: String) {
+        try {
+            cancelNotification(notificationKey)
+            activeNotifications.remove(notificationKey)
+            Log.d(TAG, "Dismissed notification: $notificationKey")
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not dismiss notification: ${e.message}")
+        }
+    }
+
+    /**
      * Find and reply to any notification from a given contact/package combo.
-     * Useful when we know the contact but the exact key changed.
      */
     fun replyToContact(contact: String, packageName: String, text: String): ReplyResult {
         for ((key, sbn) in activeNotifications) {
@@ -154,9 +153,6 @@ class NotificationListener : NotificationListenerService() {
         return ReplyResult(false, "No active notification found from $contact on $packageName")
     }
 
-    /**
-     * Check if a notification key has a reply action available.
-     */
     fun canReply(notificationKey: String): Boolean {
         val sbn = activeNotifications[notificationKey] ?: return false
         return hasReplyAction(sbn)
