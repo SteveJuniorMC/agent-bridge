@@ -55,6 +55,7 @@ class ToolExecutor(private val context: Context) {
                 "back" -> ScreenTools.back(params)
                 "home" -> ScreenTools.home(params)
                 "open_app" -> IntentTools.openApp(context, params)
+                "list_installed_apps" -> IntentTools.listInstalledApps(context, params)
                 "open_notifications" -> ScreenTools.openNotifications(params)
 
                 // Messaging

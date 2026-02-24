@@ -35,6 +35,42 @@ object IntentTools {
         }
     }
 
+    fun listInstalledApps(context: Context, params: Map<String, Any>): JsonObject {
+        val query = params["query"]?.toString()?.lowercase()
+
+        return try {
+            val pm = context.packageManager
+            val apps = pm.getInstalledApplications(0)
+                .filter { pm.getLaunchIntentForPackage(it.packageName) != null }
+                .map { appInfo ->
+                    val label = pm.getApplicationLabel(appInfo).toString()
+                    Pair(label, appInfo.packageName)
+                }
+                .let { list ->
+                    if (query != null) {
+                        list.filter { it.first.lowercase().contains(query) || it.second.lowercase().contains(query) }
+                    } else list
+                }
+                .sortedBy { it.first.lowercase() }
+
+            val appArray = com.google.gson.JsonArray()
+            for ((label, pkg) in apps) {
+                appArray.add(JsonObject().apply {
+                    addProperty("name", label)
+                    addProperty("package", pkg)
+                })
+            }
+
+            JsonObject().apply {
+                addProperty("success", true)
+                add("apps", appArray)
+                addProperty("count", apps.size)
+            }
+        } catch (e: Exception) {
+            error("Failed to list apps: ${e.message}")
+        }
+    }
+
     fun sendWhatsapp(context: Context, params: Map<String, Any>): JsonObject {
         val to = params["to"]?.toString() ?: return error("Missing param: to")
         val message = params["message"]?.toString() ?: return error("Missing param: message")

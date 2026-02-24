@@ -42,9 +42,12 @@ object ToolRegistry {
             },
             tool("back", "Press the back button") {},
             tool("home", "Press the home button") {},
-            tool("open_app", "Open an app by package name or URL") {
+            tool("open_app", "Open an app by package name or URL. ALWAYS prefer this over trying to find and tap app icons on the home screen. Common packages: com.whatsapp, com.google.android.apps.messaging, org.telegram.messenger, com.instagram.android, com.facebook.orca, com.reddit.frontpage, com.snapchat.android, com.twitter.android, com.spotify.music, com.google.android.youtube, com.google.android.gm (Gmail), com.google.android.calendar, com.google.android.apps.maps, com.android.chrome, com.google.android.dialer. If you don't know the package name, use list_installed_apps to find it.") {
                 optionalString("package", "App package name (e.g. com.whatsapp)")
                 optionalString("url", "URL to open")
+            },
+            tool("list_installed_apps", "List all installed apps with their package names. Use this to find the correct package name before calling open_app.") {
+                optionalString("query", "Filter apps by name (optional)")
             },
             tool("open_notifications", "Pull down the notification shade") {},
 
