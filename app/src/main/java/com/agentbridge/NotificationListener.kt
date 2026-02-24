@@ -22,6 +22,9 @@ class NotificationListener : NotificationListenerService() {
     // Store active notifications keyed by notification key
     private val activeNotifications = ConcurrentHashMap<String, StatusBarNotification>()
 
+    // Track last processed message text per contact to avoid re-processing
+    // Key: "contact|package", Value: message text
+    private val lastProcessedText = ConcurrentHashMap<String, String>()
 
     override fun onListenerConnected() {
         super.onListenerConnected()
@@ -33,6 +36,7 @@ class NotificationListener : NotificationListenerService() {
         super.onListenerDisconnected()
         instance = null
         activeNotifications.clear()
+        lastProcessedText.clear()
         Log.i(TAG, "Notification listener disconnected")
     }
 
@@ -66,11 +70,13 @@ class NotificationListener : NotificationListenerService() {
         // Skip empty or very short messages
         if (text.isBlank() || text.length < 2) return
 
-        // Skip if the latest message in the conversation is from us (our own reply)
-        if (isLatestMessageFromUs(sbn.notification)) {
-            Log.d(TAG, "Skipping notification from $title on $pkg (latest message is from us)")
+        // Skip if we already processed this exact message from this contact
+        val contactKey = "$title|$pkg"
+        if (lastProcessedText[contactKey] == text) {
+            Log.d(TAG, "Skipping already processed message from $title on $pkg")
             return
         }
+        lastProcessedText[contactKey] = text
 
         Log.i(TAG, "New message from $title on $pkg: ${text.take(100)}")
 
@@ -85,6 +91,12 @@ class NotificationListener : NotificationListenerService() {
     override fun onNotificationRemoved(sbn: StatusBarNotification?) {
         sbn ?: return
         activeNotifications.remove(sbn.key)
+
+        // Clear processed text so future messages from this contact are accepted
+        val title = sbn.notification.extras?.getString(Notification.EXTRA_TITLE)
+        if (title != null) {
+            lastProcessedText.remove("$title|${sbn.packageName}")
+        }
     }
 
     /**
@@ -148,25 +160,6 @@ class NotificationListener : NotificationListenerService() {
     fun canReply(notificationKey: String): Boolean {
         val sbn = activeNotifications[notificationKey] ?: return false
         return hasReplyAction(sbn)
-    }
-
-    /**
-     * Check if the latest message in a MessagingStyle notification is from us.
-     * WhatsApp, Telegram, etc. use MessagingStyle where senderPerson==null means "me".
-     */
-    private fun isLatestMessageFromUs(notification: Notification): Boolean {
-        return try {
-            val extras = notification.extras ?: return false
-            val msgs = extras.getParcelableArray(Notification.EXTRA_MESSAGES) ?: return false
-            if (msgs.isEmpty()) return false
-            val lastMsg = msgs.last() as? Bundle ?: return false
-            // In MessagingStyle, "sender" is null or absent for messages from us
-            val sender = lastMsg.getCharSequence("sender")
-            sender == null || sender.toString().isBlank()
-        } catch (e: Exception) {
-            Log.w(TAG, "Failed to check messaging style: ${e.message}")
-            false
-        }
     }
 
     private fun hasReplyAction(sbn: StatusBarNotification): Boolean {
