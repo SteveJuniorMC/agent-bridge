@@ -4,7 +4,6 @@ import android.content.Context
 import android.util.Log
 import com.agentbridge.db.ConversationDao
 import com.agentbridge.db.TaskDao
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -39,7 +38,6 @@ class AgentLoop(private val context: Context) {
     private val taskQueue = ConcurrentLinkedQueue<AgentTask>()
     private val isRunning = AtomicBoolean(false)
     private val isProcessing = AtomicBoolean(false)
-    private val activeContacts = java.util.Collections.newSetFromMap(ConcurrentHashMap<String, Boolean>())
     private var statusListener: StatusListener? = null
     private var loopThread: Thread? = null
 
@@ -83,13 +81,6 @@ class AgentLoop(private val context: Context) {
     }
 
     fun enqueueNotification(contact: String, message: String, platform: String, notificationKey: String?) {
-        // Skip if already handling this contact
-        val contactKey = "$contact|${platformName(platform)}"
-        if (!activeContacts.add(contactKey)) {
-            Log.d(TAG, "Already handling $contactKey, skipping")
-            return
-        }
-
         // Save incoming message to DB
         conversationDao.saveMessage(contact, platformName(platform), "incoming", message)
         conversationDao.saveContact(contact, platform = platformName(platform))
@@ -284,21 +275,13 @@ class AgentLoop(private val context: Context) {
     private fun completeTask(task: AgentTask, summary: String) {
         taskDao.updateTaskStatus(task.id, "completed", summary)
         statusListener?.onTaskCompleted(task, summary)
-        clearActiveContact(task)
         Log.i(TAG, "Task completed: $summary")
     }
 
     private fun failTask(task: AgentTask, error: String) {
         taskDao.updateTaskStatus(task.id, "failed", error)
         statusListener?.onTaskFailed(task, error)
-        clearActiveContact(task)
         Log.e(TAG, "Task failed: $error")
-    }
-
-    private fun clearActiveContact(task: AgentTask) {
-        if (task.contact != null && task.platform != null) {
-            activeContacts.remove("${task.contact}|${task.platform}")
-        }
     }
 
     private fun platformName(packageName: String): String {

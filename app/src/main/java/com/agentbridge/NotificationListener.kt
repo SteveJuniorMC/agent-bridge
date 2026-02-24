@@ -66,6 +66,12 @@ class NotificationListener : NotificationListenerService() {
         // Skip empty or very short messages
         if (text.isBlank() || text.length < 2) return
 
+        // Skip if the latest message in the conversation is from us (our own reply)
+        if (isLatestMessageFromUs(sbn.notification)) {
+            Log.d(TAG, "Skipping notification from $title on $pkg (latest message is from us)")
+            return
+        }
+
         Log.i(TAG, "New message from $title on $pkg: ${text.take(100)}")
 
         foregroundService.handleIncomingMessage(
@@ -142,6 +148,24 @@ class NotificationListener : NotificationListenerService() {
     fun canReply(notificationKey: String): Boolean {
         val sbn = activeNotifications[notificationKey] ?: return false
         return hasReplyAction(sbn)
+    }
+
+    /**
+     * Check if the latest message in a MessagingStyle notification is from us.
+     * WhatsApp, Telegram, etc. use MessagingStyle where senderPerson==null means "me".
+     */
+    private fun isLatestMessageFromUs(notification: Notification): Boolean {
+        return try {
+            val style = Notification.MessagingStyle.extractMessagingStyleFromNotification(notification)
+                ?: return false
+            val messages = style.messages
+            if (messages.isEmpty()) return false
+            // senderPerson is null for messages from the device owner (us)
+            messages.last().senderPerson == null
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to check messaging style: ${e.message}")
+            false
+        }
     }
 
     private fun hasReplyAction(sbn: StatusBarNotification): Boolean {
