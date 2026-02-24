@@ -18,6 +18,7 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var etCustomInstructions: EditText
     private lateinit var switchAgent: SwitchMaterial
     private lateinit var btnSave: Button
+    private var suppressToggle = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,6 +39,7 @@ class SettingsActivity : AppCompatActivity() {
 
         // Agent toggle
         switchAgent.setOnCheckedChangeListener { _, isChecked ->
+            if (suppressToggle) return@setOnCheckedChangeListener
             if (isChecked) {
                 AgentForegroundService.start(this)
             } else {
@@ -53,7 +55,9 @@ class SettingsActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        suppressToggle = true
         switchAgent.isChecked = AgentForegroundService.instance != null
+        suppressToggle = false
     }
 
     private fun loadSettings() {

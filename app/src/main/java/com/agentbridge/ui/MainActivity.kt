@@ -26,6 +26,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvNoActivity: TextView
 
     private lateinit var conversationDao: ConversationDao
+    private var suppressToggle = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -56,12 +57,16 @@ class MainActivity : AppCompatActivity() {
 
         // Agent toggle
         switchAgent.setOnCheckedChangeListener { _, isChecked ->
+            if (suppressToggle) return@setOnCheckedChangeListener
             if (isChecked) {
                 AgentForegroundService.start(this)
+                tvAgentStatus.text = "Active — monitoring"
+                viewStatusIndicator.setBackgroundColor(0xFF4CAF50.toInt())
             } else {
                 AgentForegroundService.stop(this)
+                tvAgentStatus.text = "Inactive"
+                viewStatusIndicator.setBackgroundColor(0xFFF44336.toInt())
             }
-            updateAgentStatus()
         }
 
         // Navigation buttons
@@ -86,13 +91,15 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateAgentStatus() {
         val running = AgentForegroundService.instance != null
+        suppressToggle = true
         switchAgent.isChecked = running
+        suppressToggle = false
         if (running) {
             tvAgentStatus.text = "Active — monitoring"
-            viewStatusIndicator.setBackgroundColor(0xFF4CAF50.toInt()) // green
+            viewStatusIndicator.setBackgroundColor(0xFF4CAF50.toInt())
         } else {
             tvAgentStatus.text = "Inactive"
-            viewStatusIndicator.setBackgroundColor(0xFFF44336.toInt()) // red
+            viewStatusIndicator.setBackgroundColor(0xFFF44336.toInt())
         }
     }
 
