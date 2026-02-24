@@ -156,12 +156,13 @@ class NotificationListener : NotificationListenerService() {
      */
     private fun isLatestMessageFromUs(notification: Notification): Boolean {
         return try {
-            val style = Notification.MessagingStyle.extractMessagingStyleFromNotification(notification)
-                ?: return false
-            val messages = style.messages
-            if (messages.isEmpty()) return false
-            // senderPerson is null for messages from the device owner (us)
-            messages.last().senderPerson == null
+            val extras = notification.extras ?: return false
+            val msgs = extras.getParcelableArray(Notification.EXTRA_MESSAGES) ?: return false
+            if (msgs.isEmpty()) return false
+            val lastMsg = msgs.last() as? Bundle ?: return false
+            // In MessagingStyle, "sender" is null or absent for messages from us
+            val sender = lastMsg.getCharSequence("sender")
+            sender == null || sender.toString().isBlank()
         } catch (e: Exception) {
             Log.w(TAG, "Failed to check messaging style: ${e.message}")
             false
