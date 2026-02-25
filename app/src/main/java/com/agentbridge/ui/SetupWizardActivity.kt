@@ -3,6 +3,7 @@ package com.agentbridge.ui
 import android.Manifest
 import android.content.ComponentName
 import android.content.Intent
+import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
@@ -73,14 +74,7 @@ class SetupWizardActivity : AppCompatActivity() {
         var enabled: Boolean = true
     )
 
-    private val monitoredApps = mutableListOf(
-        AppEntry("com.whatsapp", "WhatsApp"),
-        AppEntry("com.google.android.apps.messaging", "Messages"),
-        AppEntry("org.telegram.messenger", "Telegram"),
-        AppEntry("com.instagram.android", "Instagram"),
-        AppEntry("com.facebook.orca", "Messenger"),
-        AppEntry("com.reddit.frontpage", "Reddit")
-    )
+    private val monitoredApps = mutableListOf<AppEntry>()
 
     private lateinit var taskDao: TaskDao
 
@@ -269,18 +263,28 @@ class SetupWizardActivity : AppCompatActivity() {
     private fun setupStep3() {
         layoutAppToggles.removeAllViews()
 
+        // Get installed non-system apps
+        val pm = packageManager
+        val installed = pm.getInstalledApplications(PackageManager.GET_META_DATA)
+            .filter { it.flags and ApplicationInfo.FLAG_SYSTEM == 0 }
+            .map { AppEntry(it.packageName, pm.getApplicationLabel(it).toString()) }
+            .sortedBy { it.displayName.lowercase() }
+
+        monitoredApps.clear()
+        monitoredApps.addAll(installed)
+
         // Load existing monitored app state
         val existing = taskDao.getMonitoredApps()
         val existingMap = existing.associate { it.packageName to it.enabled }
 
         for (app in monitoredApps) {
-            app.enabled = existingMap[app.packageName] ?: true
+            app.enabled = existingMap[app.packageName] ?: false
 
             val cb = CheckBox(this).apply {
-                text = app.displayName
+                text = "${app.displayName}\n${app.packageName}"
                 isChecked = app.enabled
-                textSize = 16f
-                setPadding(0, 12, 0, 12)
+                textSize = 14f
+                setPadding(0, 8, 0, 8)
                 setOnCheckedChangeListener { _, isChecked ->
                     app.enabled = isChecked
                 }
