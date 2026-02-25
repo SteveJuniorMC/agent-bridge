@@ -78,7 +78,7 @@ class AppSelectorActivity : AppCompatActivity() {
         val pm = packageManager
         val apps = pm.getInstalledApplications(PackageManager.GET_META_DATA)
         return apps
-            .filter { it.flags and ApplicationInfo.FLAG_SYSTEM == 0 }
+            .filter { it.flags and ApplicationInfo.FLAG_SYSTEM == 0 || it.packageName in KNOWN_MESSAGING_PACKAGES }
             .map { AppEntry(it.packageName, pm.getApplicationLabel(it).toString()) }
             .sortedBy { it.displayName.lowercase() }
     }

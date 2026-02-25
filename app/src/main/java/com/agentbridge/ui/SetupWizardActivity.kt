@@ -266,7 +266,7 @@ class SetupWizardActivity : AppCompatActivity() {
         // Get installed non-system apps
         val pm = packageManager
         val installed = pm.getInstalledApplications(PackageManager.GET_META_DATA)
-            .filter { it.flags and ApplicationInfo.FLAG_SYSTEM == 0 }
+            .filter { it.flags and ApplicationInfo.FLAG_SYSTEM == 0 || it.packageName in AppSelectorActivity.KNOWN_MESSAGING_PACKAGES }
             .map { AppEntry(it.packageName, pm.getApplicationLabel(it).toString()) }
             .sortedBy { it.displayName.lowercase() }
 
