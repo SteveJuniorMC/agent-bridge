@@ -92,6 +92,17 @@ class AppSelectorActivity : AppCompatActivity() {
         val filteredSupported = filterApps(supportedApps, query)
         val filteredOther = filterApps(otherApps, query)
 
+        // Notice about notifications
+        if (query.isEmpty()) {
+            val notice = TextView(this).apply {
+                text = "Make sure notifications are enabled for each app you monitor — the agent can only respond to messages it receives as notifications."
+                textSize = 13f
+                setTextColor(0xFFE65100.toInt())
+                setPadding(0, 0, 0, 16)
+            }
+            layoutAppList.addView(notice)
+        }
+
         // Supported Apps section
         if (filteredSupported.isNotEmpty()) {
             addSectionHeader("Supported Apps")
