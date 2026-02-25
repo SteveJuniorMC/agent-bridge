@@ -118,44 +118,27 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="The agent needs these permissions to monitor and interact with messaging apps."
+                    android:text="Grant the required permissions to get started. Optional permissions unlock additional tools."
                     android:textSize="14sp"
                     android:textColor="@color/text_secondary"
                     android:layout_marginBottom="16dp" />
 
-                <!-- Accessibility Service -->
-                <LinearLayout
-                    android:layout_width="match_parent"
+                <!-- Required header -->
+                <TextView
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginBottom="8dp">
-
-                    <CheckBox
-                        android:id="@+id/cbAccessibility"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Accessibility Service"
-                        android:clickable="false"
-                        android:focusable="false" />
-
-                    <Button
-                        android:id="@+id/btnGrantAccessibility"
-                        android:layout_width="wrap_content"
-                        android:layout_height="36dp"
-                        android:text="Grant"
-                        android:textSize="12sp" />
-
-                </LinearLayout>
+                    android:text="Required"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_primary"
+                    android:layout_marginBottom="8dp" />
 
                 <!-- Notification Listener -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginBottom="8dp">
+                    android:gravity="center_vertical">
 
                     <CheckBox
                         android:id="@+id/cbNotificationListener"
@@ -175,39 +158,21 @@
 
                 </LinearLayout>
 
-                <!-- Overlay Permission -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Required to receive and reply to messages"
+                    android:textSize="12sp"
+                    android:textColor="@color/text_secondary"
+                    android:paddingStart="32dp"
+                    android:layout_marginBottom="12dp" />
+
+                <!-- Post Notifications -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginBottom="8dp">
-
-                    <CheckBox
-                        android:id="@+id/cbOverlay"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Display Over Other Apps"
-                        android:clickable="false"
-                        android:focusable="false" />
-
-                    <Button
-                        android:id="@+id/btnGrantOverlay"
-                        android:layout_width="wrap_content"
-                        android:layout_height="36dp"
-                        android:text="Grant"
-                        android:textSize="12sp" />
-
-                </LinearLayout>
-
-                <!-- Notification Permission -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginBottom="8dp">
+                    android:gravity="center_vertical">
 
                     <CheckBox
                         android:id="@+id/cbNotifications"
@@ -227,13 +192,99 @@
 
                 </LinearLayout>
 
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Required for the background service"
+                    android:textSize="12sp"
+                    android:textColor="@color/text_secondary"
+                    android:paddingStart="32dp"
+                    android:layout_marginBottom="16dp" />
+
+                <!-- Optional header -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Optional"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_primary"
+                    android:layout_marginBottom="8dp" />
+
+                <!-- Accessibility Service -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <CheckBox
+                        android:id="@+id/cbAccessibility"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Accessibility Service"
+                        android:clickable="false"
+                        android:focusable="false" />
+
+                    <Button
+                        android:id="@+id/btnGrantAccessibility"
+                        android:layout_width="wrap_content"
+                        android:layout_height="36dp"
+                        android:text="Grant"
+                        android:textSize="12sp" />
+
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Enables fallback reply methods when notification reply fails (opening apps, tapping buttons)"
+                    android:textSize="12sp"
+                    android:textColor="@color/text_secondary"
+                    android:paddingStart="32dp"
+                    android:layout_marginBottom="12dp" />
+
+                <!-- Overlay Permission -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <CheckBox
+                        android:id="@+id/cbOverlay"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Display Over Other Apps"
+                        android:clickable="false"
+                        android:focusable="false" />
+
+                    <Button
+                        android:id="@+id/btnGrantOverlay"
+                        android:layout_width="wrap_content"
+                        android:layout_height="36dp"
+                        android:text="Grant"
+                        android:textSize="12sp" />
+
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Shows a status overlay while the agent is working"
+                    android:textSize="12sp"
+                    android:textColor="@color/text_secondary"
+                    android:paddingStart="32dp"
+                    android:layout_marginBottom="12dp" />
+
                 <!-- Contacts Permission -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginBottom="8dp">
+                    android:gravity="center_vertical">
 
                     <CheckBox
                         android:id="@+id/cbContacts"
@@ -253,13 +304,21 @@
 
                 </LinearLayout>
 
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Lets the agent look up contacts by name"
+                    android:textSize="12sp"
+                    android:textColor="@color/text_secondary"
+                    android:paddingStart="32dp"
+                    android:layout_marginBottom="12dp" />
+
                 <!-- SMS Permission -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginBottom="8dp">
+                    android:gravity="center_vertical">
 
                     <CheckBox
                         android:id="@+id/cbSms"
@@ -278,6 +337,15 @@
                         android:textSize="12sp" />
 
                 </LinearLayout>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Lets the agent read and send SMS messages"
+                    android:textSize="12sp"
+                    android:textColor="@color/text_secondary"
+                    android:paddingStart="32dp"
+                    android:layout_marginBottom="8dp" />
 
             </LinearLayout>
 

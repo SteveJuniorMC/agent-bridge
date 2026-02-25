@@ -169,7 +169,7 @@ class AgentLoop(private val context: Context) {
         val triggerContent = "You received a new message from ${task.contact} on ${task.platform}: \"${task.message}\"\n\nTo reply, use the reply_notification tool — it sends your reply directly through the notification without opening any app. If it fails (can_reply=false), fall back to send_whatsapp or open the app manually."
         messages.add(OpenRouterClient.ChatMessage(role = "user", content = triggerContent))
 
-        val tools = ToolRegistry.getToolDefinitions()
+        val tools = ToolRegistry.getToolDefinitions(context)
 
         var steps = 0
         var done = false

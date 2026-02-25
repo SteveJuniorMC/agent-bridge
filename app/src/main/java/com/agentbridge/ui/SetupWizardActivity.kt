@@ -250,12 +250,8 @@ class SetupWizardActivity : AppCompatActivity() {
     }
 
     private fun allPermissionsGranted(): Boolean {
-        return cbAccessibility.isChecked &&
-                cbNotificationListener.isChecked &&
-                cbOverlay.isChecked &&
-                cbNotifications.isChecked &&
-                cbContacts.isChecked &&
-                cbSms.isChecked
+        return cbNotificationListener.isChecked &&
+                cbNotifications.isChecked
     }
 
     // ---- Step 3: App Monitoring ----

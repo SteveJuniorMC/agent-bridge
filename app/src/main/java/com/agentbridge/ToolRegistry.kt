@@ -1,11 +1,45 @@
 package com.agentbridge
 
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 
 object ToolRegistry {
 
-    fun getToolDefinitions(): List<OpenRouterClient.ToolDefinition> {
+    private val accessibilityTools = setOf(
+        "tap", "long_press", "swipe", "type_text", "click_text", "click_id",
+        "scroll", "dump_ui", "get_screen_text", "find_element", "back", "home",
+        "open_app", "list_installed_apps", "open_notifications", "send_whatsapp"
+    )
+
+    private val smsTools = setOf("send_sms", "read_sms")
+
+    private val contactsTools = setOf("get_contacts")
+
+    fun getToolDefinitions(context: Context): List<OpenRouterClient.ToolDefinition> {
+        val hasAccessibility = AgentAccessibilityService.instance != null
+        val hasSms = ContextCompat.checkSelfPermission(context, Manifest.permission.READ_SMS) ==
+            PackageManager.PERMISSION_GRANTED &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.SEND_SMS) ==
+            PackageManager.PERMISSION_GRANTED
+        val hasContacts = ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) ==
+            PackageManager.PERMISSION_GRANTED
+
+        return allTools().filter { tool ->
+            val name = tool.function.name
+            when {
+                name in accessibilityTools -> hasAccessibility
+                name in smsTools -> hasSms
+                name in contactsTools -> hasContacts
+                else -> true
+            }
+        }
+    }
+
+    private fun allTools(): List<OpenRouterClient.ToolDefinition> {
         return listOf(
             // Screen Control
             tool("tap", "Tap at screen coordinates") {
