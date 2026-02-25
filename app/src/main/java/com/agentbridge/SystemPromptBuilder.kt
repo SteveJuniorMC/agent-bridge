@@ -22,11 +22,12 @@ class SystemPromptBuilder(private val context: Context) {
             .format(java.util.Date())
 
         val conversationHistory = if (contactName != null) {
-            val messages = dao.getConversation(contactName, platform, limit = 15)
+            val messages = dao.getConversation(contactName, limit = 15)
             if (messages.isNotEmpty()) {
                 messages.joinToString("\n") { msg ->
                     val dir = if (msg.direction == "incoming") contactName else "You"
-                    "[$dir]: ${msg.content}"
+                    val plat = if (msg.platform != platform) " (${msg.platform})" else ""
+                    "[$dir$plat]: ${msg.content}"
                 }
             } else "No previous conversation history."
         } else "N/A"
