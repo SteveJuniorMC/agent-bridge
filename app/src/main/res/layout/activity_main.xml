@@ -151,7 +151,7 @@
                             android:layout_marginStart="8dp"
                             android:layout_marginEnd="8dp" />
 
-                        <!-- Tasks Completed -->
+                        <!-- Replies Sent -->
                         <LinearLayout
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
@@ -160,7 +160,7 @@
                             android:gravity="center">
 
                             <TextView
-                                android:id="@+id/tvTasksCount"
+                                android:id="@+id/tvRepliesCount"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="0"
@@ -171,7 +171,7 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Tasks Completed"
+                                android:text="Replies Sent"
                                 android:textSize="12sp"
                                 android:textColor="@color/text_secondary" />
 
@@ -183,7 +183,7 @@
 
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Recent Activity Card -->
+            <!-- Recent Messages Card -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -201,33 +201,27 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Recent Activity"
+                        android:text="Recent Messages"
                         style="@style/SectionTitle" />
 
-                    <ScrollView
+                    <LinearLayout
+                        android:id="@+id/layoutRecentMessages"
                         android:layout_width="match_parent"
-                        android:layout_height="200dp">
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
 
-                        <LinearLayout
-                            android:id="@+id/layoutActivityFeed"
+                        <!-- Message items will be added here programmatically -->
+                        <TextView
+                            android:id="@+id/tvNoMessages"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:orientation="vertical">
+                            android:text="No recent messages"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="14sp"
+                            android:gravity="center"
+                            android:padding="24dp" />
 
-                            <!-- Activity items will be added here programmatically -->
-                            <TextView
-                                android:id="@+id/tvNoActivity"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:text="No recent activity"
-                                android:textColor="@color/text_secondary"
-                                android:textSize="14sp"
-                                android:gravity="center"
-                                android:padding="24dp" />
-
-                        </LinearLayout>
-
-                    </ScrollView>
+                    </LinearLayout>
 
                 </LinearLayout>
 
@@ -242,23 +236,11 @@
                 android:gravity="center">
 
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnNewTask"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="New Task"
-                    android:layout_marginEnd="4dp"
-                    style="@style/PrimaryButton"
-                    app:icon="@android:drawable/ic_input_add"
-                    app:iconGravity="textStart" />
-
-                <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnConversations"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="Chats"
-                    android:layout_marginStart="4dp"
                     android:layout_marginEnd="4dp"
                     style="@style/SecondaryButton" />
 

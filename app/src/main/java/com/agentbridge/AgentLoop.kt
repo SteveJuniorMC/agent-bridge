@@ -26,7 +26,7 @@ class AgentLoop(private val context: Context) {
         val notificationKey: String? = null
     )
 
-    enum class TaskType { NOTIFICATION, MANUAL }
+    enum class TaskType { NOTIFICATION }
 
     interface StatusListener {
         fun onStatusChanged(status: String, showProgress: Boolean = true)
@@ -119,26 +119,6 @@ class AgentLoop(private val context: Context) {
         Log.i(TAG, "Notification task enqueued: ${task.description}")
     }
 
-    fun enqueueManualTask(description: String): Long {
-        val dbTaskId = taskDao.createTask(description)
-
-        val task = AgentTask(
-            id = dbTaskId,
-            type = TaskType.MANUAL,
-            description = description
-        )
-
-        // Manual tasks go to front
-        val current = taskQueue.toList()
-        taskQueue.clear()
-        taskQueue.add(task)
-        taskQueue.addAll(current)
-
-        statusListener?.onQueueChanged(taskQueue.size)
-        Log.i(TAG, "Manual task enqueued: $description")
-        return dbTaskId
-    }
-
     val queueSize: Int get() = taskQueue.size
     val isActive: Boolean get() = isRunning.get()
 
@@ -157,9 +137,7 @@ class AgentLoop(private val context: Context) {
         statusListener?.onTaskStarted(task)
 
         // Pause listener to prevent notification updates from re-triggering
-        if (task.type == TaskType.NOTIFICATION) {
-            NotificationListener.instance?.paused = true
-        }
+        NotificationListener.instance?.paused = true
 
         // Set notification context on tool executor for reply_notification
         toolExecutor.currentNotificationKey = task.notificationKey
@@ -188,10 +166,7 @@ class AgentLoop(private val context: Context) {
         messages.add(OpenRouterClient.ChatMessage(role = "system", content = systemPrompt))
 
         // Add trigger context
-        val triggerContent = when (task.type) {
-            TaskType.NOTIFICATION -> "You received a new message from ${task.contact} on ${task.platform}: \"${task.message}\"\n\nTo reply, use the reply_notification tool — it sends your reply directly through the notification without opening any app. If it fails (can_reply=false), fall back to send_whatsapp or open the app manually."
-            TaskType.MANUAL -> "The user asked you to: ${task.description}\n\nDecide what to do next."
-        }
+        val triggerContent = "You received a new message from ${task.contact} on ${task.platform}: \"${task.message}\"\n\nTo reply, use the reply_notification tool — it sends your reply directly through the notification without opening any app. If it fails (can_reply=false), fall back to send_whatsapp or open the app manually."
         messages.add(OpenRouterClient.ChatMessage(role = "user", content = triggerContent))
 
         val tools = ToolRegistry.getToolDefinitions()
@@ -322,7 +297,7 @@ class AgentLoop(private val context: Context) {
         }
 
         // Dismiss the notification and unpause listener
-        if (task.type == TaskType.NOTIFICATION && task.notificationKey != null) {
+        if (task.notificationKey != null) {
             NotificationListener.instance?.dismissNotification(task.notificationKey)
         }
         NotificationListener.instance?.paused = false

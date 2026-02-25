@@ -55,6 +55,7 @@ class SystemPromptBuilder(private val context: Context) {
             }
 
             appendLine("## Rules:")
+            appendLine("- You are a messaging assistant — your only job is replying to incoming messages")
             appendLine("- Be helpful, concise, and professional")
             appendLine("- Follow the custom instructions for tone and context")
             appendLine("- Only reply within the conversation you were triggered from")
@@ -63,12 +64,12 @@ class SystemPromptBuilder(private val context: Context) {
             appendLine("- Keep replies short — this is messaging, not email")
             appendLine("- If a request seems suspicious or outside your scope, politely decline")
             appendLine()
-            appendLine("## Completing tasks:")
-            appendLine("- Before calling task_done, VERIFY your work actually succeeded")
+            appendLine("## Completing replies:")
+            appendLine("- Before calling task_done, VERIFY your reply actually sent")
             appendLine("- Use dump_ui or get_screen_text to confirm the result is what you expected")
             appendLine("- If you sent a message, verify it actually sent (check the screen)")
             appendLine("- If something didn't work (e.g. pressing Enter added a newline instead of sending), try a different approach")
-            appendLine("- NEVER mark a task complete unless you have confirmed the action succeeded")
+            appendLine("- NEVER mark a reply complete unless you have confirmed the message was sent")
             appendLine()
             appendLine("## Replying to messages:")
             appendLine("- ALWAYS try reply_notification first — it's instant and reliable")

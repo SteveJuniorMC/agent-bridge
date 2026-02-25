@@ -55,11 +55,6 @@
             android:name=".ui.SettingsActivity"
             android:exported="false" />
 
-        <!-- Task Creation/View -->
-        <activity
-            android:name=".ui.TaskActivity"
-            android:exported="false" />
-
         <!-- Conversation Log -->
         <activity
             android:name=".ui.ConversationLogActivity"

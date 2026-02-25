@@ -277,20 +277,76 @@ class SetupWizardActivity : AppCompatActivity() {
         val existing = taskDao.getMonitoredApps()
         val existingMap = existing.associate { it.packageName to it.enabled }
 
-        for (app in monitoredApps) {
-            app.enabled = existingMap[app.packageName] ?: false
-
-            val cb = CheckBox(this).apply {
-                text = "${app.displayName}\n${app.packageName}"
-                isChecked = app.enabled
-                textSize = 14f
-                setPadding(0, 8, 0, 8)
-                setOnCheckedChangeListener { _, isChecked ->
-                    app.enabled = isChecked
-                }
-            }
-            layoutAppToggles.addView(cb)
+        val supported = monitoredApps.filter {
+            it.packageName in AppSelectorActivity.KNOWN_MESSAGING_PACKAGES
         }
+        val other = monitoredApps.filter {
+            it.packageName !in AppSelectorActivity.KNOWN_MESSAGING_PACKAGES
+        }
+
+        // Supported messaging apps section
+        if (supported.isNotEmpty()) {
+            val header = TextView(this).apply {
+                text = "Supported Apps"
+                textSize = 16f
+                setTextColor(0xFF333333.toInt())
+                setTypeface(null, android.graphics.Typeface.BOLD)
+                setPadding(0, 16, 0, 4)
+            }
+            layoutAppToggles.addView(header)
+
+            val desc = TextView(this).apply {
+                text = "These messaging apps support notification replies."
+                textSize = 13f
+                setTextColor(0xFF666666.toInt())
+                setPadding(0, 0, 0, 8)
+            }
+            layoutAppToggles.addView(desc)
+
+            for (app in supported) {
+                // Default supported messaging apps to enabled unless explicitly set
+                app.enabled = existingMap[app.packageName] ?: true
+                addAppToggle(app)
+            }
+        }
+
+        // Other apps section
+        if (other.isNotEmpty()) {
+            val header = TextView(this).apply {
+                text = "Other Apps"
+                textSize = 16f
+                setTextColor(0xFF333333.toInt())
+                setTypeface(null, android.graphics.Typeface.BOLD)
+                setPadding(0, 24, 0, 4)
+            }
+            layoutAppToggles.addView(header)
+
+            val desc = TextView(this).apply {
+                text = "These apps may not support notification replies and might not work reliably."
+                textSize = 13f
+                setTextColor(0xFF666666.toInt())
+                setPadding(0, 0, 0, 8)
+            }
+            layoutAppToggles.addView(desc)
+
+            for (app in other) {
+                app.enabled = existingMap[app.packageName] ?: false
+                addAppToggle(app)
+            }
+        }
+    }
+
+    private fun addAppToggle(app: AppEntry) {
+        val cb = CheckBox(this).apply {
+            text = "${app.displayName}\n${app.packageName}"
+            isChecked = app.enabled
+            textSize = 14f
+            setPadding(0, 8, 0, 8)
+            setOnCheckedChangeListener { _, isChecked ->
+                app.enabled = isChecked
+            }
+        }
+        layoutAppToggles.addView(cb)
     }
 
     // ---- Step 4: Custom Instructions ----

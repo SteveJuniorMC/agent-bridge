@@ -16,6 +16,28 @@ import com.agentbridge.db.TaskDao
 
 class AppSelectorActivity : AppCompatActivity() {
 
+    companion object {
+        val KNOWN_MESSAGING_PACKAGES = setOf(
+            "com.whatsapp",
+            "com.whatsapp.w4b",
+            "org.telegram.messenger",
+            "org.thoughtcrime.securesms",      // Signal
+            "com.google.android.apps.messaging", // Google Messages
+            "com.facebook.orca",                // Messenger
+            "com.instagram.android",
+            "com.viber.voip",
+            "jp.naver.line.android",            // Line
+            "com.discord",
+            "com.slack",
+            "com.snapchat.android",
+            "com.skype.raider",
+            "com.kakao.talk",
+            "com.tencent.mm",                   // WeChat
+            "com.google.android.apps.dynamite", // Google Chat
+            "com.microsoft.teams",
+        )
+    }
+
     private lateinit var layoutAppList: LinearLayout
     private lateinit var etSearch: EditText
     private lateinit var taskDao: TaskDao
@@ -25,7 +47,8 @@ class AppSelectorActivity : AppCompatActivity() {
         val displayName: String
     )
 
-    private var allApps = listOf<AppEntry>()
+    private var supportedApps = listOf<AppEntry>()
+    private var otherApps = listOf<AppEntry>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -40,7 +63,9 @@ class AppSelectorActivity : AppCompatActivity() {
         layoutAppList = findViewById(R.id.layoutAppList)
         etSearch = findViewById(R.id.etSearchApps)
 
-        allApps = getInstalledApps()
+        val allApps = getInstalledApps()
+        supportedApps = allApps.filter { it.packageName in KNOWN_MESSAGING_PACKAGES }
+        otherApps = allApps.filter { it.packageName !in KNOWN_MESSAGING_PACKAGES }
 
         etSearch.addTextChangedListener { text ->
             displayApps(text?.toString()?.trim() ?: "")
@@ -64,47 +89,28 @@ class AppSelectorActivity : AppCompatActivity() {
         val monitored = taskDao.getMonitoredApps()
         val monitoredMap = monitored.associate { it.packageName to it.enabled }
 
-        val filtered = if (query.isEmpty()) allApps
-            else allApps.filter {
-                it.displayName.contains(query, ignoreCase = true) ||
-                it.packageName.contains(query, ignoreCase = true)
+        val filteredSupported = filterApps(supportedApps, query)
+        val filteredOther = filterApps(otherApps, query)
+
+        // Supported Apps section
+        if (filteredSupported.isNotEmpty()) {
+            addSectionHeader("Supported Apps")
+            addDescription("These messaging apps support notification replies.")
+            for (app in filteredSupported.sortedByDescending { monitoredMap[it.packageName] == true }) {
+                addAppCheckbox(app, monitoredMap[app.packageName] ?: false)
             }
-
-        // Show monitored apps first
-        val sorted = filtered.sortedByDescending { monitoredMap[it.packageName] == true }
-
-        val tvDescription = TextView(this).apply {
-            text = "Select which apps the agent should monitor for incoming messages."
-            textSize = 14f
-            setTextColor(0xFF666666.toInt())
-            setPadding(0, 0, 0, 16)
-        }
-        layoutAppList.addView(tvDescription)
-
-        for (app in sorted) {
-            val isEnabled = monitoredMap[app.packageName] ?: false
-
-            val cb = CheckBox(this).apply {
-                text = "${app.displayName}\n${app.packageName}"
-                isChecked = isEnabled
-                textSize = 15f
-                setPadding(0, 12, 0, 12)
-                setOnCheckedChangeListener { _, isChecked ->
-                    taskDao.setMonitoredApp(app.packageName, app.displayName, isChecked)
-                }
-            }
-            layoutAppList.addView(cb)
-
-            val divider = android.view.View(this).apply {
-                layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT, 1
-                ).apply { topMargin = 4; bottomMargin = 4 }
-                setBackgroundColor(0x1A000000)
-            }
-            layoutAppList.addView(divider)
         }
 
-        if (sorted.isEmpty()) {
+        // Other Apps section
+        if (filteredOther.isNotEmpty()) {
+            addSectionHeader("Other Apps")
+            addDescription("These apps may not support notification replies and might not work reliably.")
+            for (app in filteredOther.sortedByDescending { monitoredMap[it.packageName] == true }) {
+                addAppCheckbox(app, monitoredMap[app.packageName] ?: false)
+            }
+        }
+
+        if (filteredSupported.isEmpty() && filteredOther.isEmpty()) {
             val noResults = TextView(this).apply {
                 text = "No apps found"
                 textSize = 14f
@@ -113,6 +119,56 @@ class AppSelectorActivity : AppCompatActivity() {
             }
             layoutAppList.addView(noResults)
         }
+    }
+
+    private fun filterApps(apps: List<AppEntry>, query: String): List<AppEntry> {
+        if (query.isEmpty()) return apps
+        return apps.filter {
+            it.displayName.contains(query, ignoreCase = true) ||
+            it.packageName.contains(query, ignoreCase = true)
+        }
+    }
+
+    private fun addSectionHeader(title: String) {
+        val header = TextView(this).apply {
+            text = title
+            textSize = 16f
+            setTextColor(0xFF333333.toInt())
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            setPadding(0, 16, 0, 4)
+        }
+        layoutAppList.addView(header)
+    }
+
+    private fun addDescription(text: String) {
+        val desc = TextView(this).apply {
+            this.text = text
+            textSize = 13f
+            setTextColor(0xFF666666.toInt())
+            setPadding(0, 0, 0, 8)
+        }
+        layoutAppList.addView(desc)
+    }
+
+    private fun addAppCheckbox(app: AppEntry, isEnabled: Boolean) {
+        val cb = CheckBox(this).apply {
+            text = "${app.displayName}\n${app.packageName}"
+            isChecked = isEnabled
+            textSize = 15f
+            setPadding(0, 12, 0, 12)
+            setOnCheckedChangeListener { _, isChecked ->
+                taskDao.setMonitoredApp(app.packageName, app.displayName, isChecked)
+            }
+        }
+        layoutAppList.addView(cb)
+
+        val divider = android.view.View(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, 1
+            ).apply { topMargin = 4; bottomMargin = 4 }
+            setBackgroundColor(0x1A000000)
+        }
+        layoutAppList.addView(divider)
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {

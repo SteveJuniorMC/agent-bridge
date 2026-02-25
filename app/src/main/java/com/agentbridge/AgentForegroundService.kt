@@ -77,10 +77,6 @@ class AgentForegroundService : Service(), AgentLoop.StatusListener {
         agentLoop.enqueueNotification(contact, message, platform, notificationKey)
     }
 
-    fun enqueueTask(description: String): Long {
-        return agentLoop.enqueueManualTask(description)
-    }
-
     fun isAppMonitored(packageName: String): Boolean {
         return taskDao.isAppMonitored(packageName)
     }
@@ -95,10 +91,7 @@ class AgentForegroundService : Service(), AgentLoop.StatusListener {
     }
 
     override fun onTaskStarted(task: AgentLoop.AgentTask) {
-        val status = when (task.type) {
-            AgentLoop.TaskType.NOTIFICATION -> "Replying to ${task.contact} on ${task.platform}..."
-            AgentLoop.TaskType.MANUAL -> "Working: ${task.description.take(40)}..."
-        }
+        val status = "Replying to ${task.contact} on ${task.platform}..."
         overlayManager.show(status, showStop = true)
         updateNotification(status)
     }
