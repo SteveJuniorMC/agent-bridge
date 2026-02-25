@@ -13,43 +13,53 @@ object UiTreeHelper {
             result.addProperty("error", "No root window available")
             return result
         }
-        result.add("tree", nodeToJson(root))
+        val tree = nodeToJson(root)
+        if (tree != null) {
+            result.add("tree", tree)
+        } else {
+            result.addProperty("error", "No visible UI elements found")
+        }
         return result
     }
 
-    private fun nodeToJson(node: AccessibilityNodeInfo): JsonObject {
+    private fun nodeToJson(node: AccessibilityNodeInfo): JsonObject? {
+        // Skip nodes not visible on screen
+        if (!node.isVisibleToUser) return null
+
+        val text = node.text?.toString() ?: ""
+        val desc = node.contentDescription?.toString() ?: ""
+        val viewId = node.viewIdResourceName ?: ""
+
+        // Collect visible children first
+        val visibleChildren = JsonArray()
+        for (i in 0 until node.childCount) {
+            val child = node.getChild(i) ?: continue
+            val childJson = nodeToJson(child)
+            if (childJson != null) visibleChildren.add(childJson)
+            child.recycle()
+        }
+
+        // Skip empty container nodes (no text, no id, not interactive, no useful children)
+        val hasContent = text.isNotEmpty() || desc.isNotEmpty() || viewId.isNotEmpty()
+        val isInteractive = node.isClickable || node.isScrollable || node.isFocused
+        if (!hasContent && !isInteractive && visibleChildren.size() == 0) return null
+
         val obj = JsonObject()
-        obj.addProperty("className", node.className?.toString() ?: "")
-        obj.addProperty("text", node.text?.toString() ?: "")
-        obj.addProperty("contentDescription", node.contentDescription?.toString() ?: "")
-        obj.addProperty("viewId", node.viewIdResourceName ?: "")
+        val className = node.className?.toString() ?: ""
+        if (className.isNotEmpty()) obj.addProperty("cls", className.substringAfterLast('.'))
+        if (text.isNotEmpty()) obj.addProperty("text", text)
+        if (desc.isNotEmpty()) obj.addProperty("desc", desc)
+        if (viewId.isNotEmpty()) obj.addProperty("id", viewId)
 
         val bounds = Rect()
         node.getBoundsInScreen(bounds)
-        val boundsObj = JsonObject()
-        boundsObj.addProperty("left", bounds.left)
-        boundsObj.addProperty("top", bounds.top)
-        boundsObj.addProperty("right", bounds.right)
-        boundsObj.addProperty("bottom", bounds.bottom)
-        obj.add("bounds", boundsObj)
+        obj.addProperty("bounds", "[${bounds.left},${bounds.top},${bounds.right},${bounds.bottom}]")
 
-        obj.addProperty("isClickable", node.isClickable)
-        obj.addProperty("isScrollable", node.isScrollable)
-        obj.addProperty("isEnabled", node.isEnabled)
-        obj.addProperty("isChecked", node.isChecked)
-        obj.addProperty("isFocused", node.isFocused)
-        obj.addProperty("isVisibleToUser", node.isVisibleToUser)
+        if (node.isClickable) obj.addProperty("click", true)
+        if (node.isScrollable) obj.addProperty("scroll", true)
+        if (node.isFocused) obj.addProperty("focus", true)
 
-        val childCount = node.childCount
-        if (childCount > 0) {
-            val children = JsonArray()
-            for (i in 0 until childCount) {
-                val child = node.getChild(i) ?: continue
-                children.add(nodeToJson(child))
-                child.recycle()
-            }
-            obj.add("children", children)
-        }
+        if (visibleChildren.size() > 0) obj.add("children", visibleChildren)
 
         return obj
     }

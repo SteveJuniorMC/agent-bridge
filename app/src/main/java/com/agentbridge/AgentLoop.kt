@@ -253,10 +253,14 @@ class AgentLoop(private val context: Context) {
                         Log.d(TAG, "Tool result: ${result.toString().take(200)}")
                         log(task.id, steps, "tool_result", "$toolName (${toolDuration}ms): ${result.toString().take(500)}")
 
-                        // Add tool result message
+                        // Add tool result message (truncate to avoid context overflow)
+                        val resultStr = result.toString()
+                        val truncatedResult = if (resultStr.length > 8000) {
+                            resultStr.take(8000) + "...(truncated)"
+                        } else resultStr
                         messages.add(OpenRouterClient.ChatMessage(
                             role = "tool",
-                            content = result.toString(),
+                            content = truncatedResult,
                             toolCallId = toolCall.id
                         ))
 
