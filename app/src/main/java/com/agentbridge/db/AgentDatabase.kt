@@ -8,7 +8,7 @@ class AgentDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, null,
 
     companion object {
         private const val DB_NAME = "agent_bridge.db"
-        private const val DB_VERSION = 1
+        private const val DB_VERSION = 2
 
         @Volatile
         private var instance: AgentDatabase? = null
@@ -85,14 +85,40 @@ class AgentDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, null,
             )
         """)
 
+        db.execSQL("""
+            CREATE TABLE task_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                task_id INTEGER NOT NULL,
+                step INTEGER NOT NULL,
+                type TEXT NOT NULL,
+                content TEXT NOT NULL,
+                timestamp INTEGER NOT NULL,
+                FOREIGN KEY(task_id) REFERENCES tasks(id)
+            )
+        """)
+
         // Indexes
         db.execSQL("CREATE INDEX idx_messages_contact ON messages(contact, platform)")
         db.execSQL("CREATE INDEX idx_messages_timestamp ON messages(timestamp)")
         db.execSQL("CREATE INDEX idx_tasks_status ON tasks(status)")
         db.execSQL("CREATE INDEX idx_audit_timestamp ON audit_log(timestamp)")
+        db.execSQL("CREATE INDEX idx_task_logs_task ON task_logs(task_id, step)")
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-        // For v1, no migration needed
+        if (oldVersion < 2) {
+            db.execSQL("""
+                CREATE TABLE IF NOT EXISTS task_logs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    task_id INTEGER NOT NULL,
+                    step INTEGER NOT NULL,
+                    type TEXT NOT NULL,
+                    content TEXT NOT NULL,
+                    timestamp INTEGER NOT NULL,
+                    FOREIGN KEY(task_id) REFERENCES tasks(id)
+                )
+            """)
+            db.execSQL("CREATE INDEX IF NOT EXISTS idx_task_logs_task ON task_logs(task_id, step)")
+        }
     }
 }

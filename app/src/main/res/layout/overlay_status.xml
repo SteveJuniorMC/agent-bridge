@@ -3,9 +3,10 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:background="@color/overlay_background"
-    android:gravity="center"
+    android:gravity="center_vertical"
     android:orientation="horizontal"
-    android:paddingHorizontal="16dp"
+    android:paddingStart="16dp"
+    android:paddingEnd="4dp"
     android:paddingVertical="6dp">
 
     <ProgressBar
@@ -27,5 +28,16 @@
         android:text="Idle — monitoring notifications"
         android:textColor="@color/overlay_text"
         android:textSize="13sp" />
+
+    <ImageButton
+        android:id="@+id/overlay_stop"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:background="?android:attr/selectableItemBackgroundBorderless"
+        android:contentDescription="Stop task"
+        android:src="@android:drawable/ic_menu_close_clear_cancel"
+        android:visibility="gone"
+        android:scaleType="centerInside"
+        android:padding="4dp" />
 
 </LinearLayout>

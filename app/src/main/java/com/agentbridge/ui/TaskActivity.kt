@@ -1,7 +1,9 @@
 package com.agentbridge.ui
 
+import android.graphics.Typeface
 import android.os.Bundle
 import android.view.MenuItem
+import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
@@ -23,6 +25,7 @@ class TaskActivity : AppCompatActivity() {
     private lateinit var btnSubmitTask: Button
     private lateinit var layoutTaskList: LinearLayout
     private lateinit var taskDao: TaskDao
+    private val expandedTasks = mutableSetOf<Long>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -117,6 +120,14 @@ class TaskActivity : AppCompatActivity() {
                 else -> "[${task.status.uppercase()}]"
             }
 
+            // Task card container
+            val cardLayout = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setBackgroundColor(0x08000000)
+                setPadding(12, 8, 12, 8)
+            }
+
+            // Task summary row
             val tv = TextView(this).apply {
                 val time = dateFormat.format(Date(task.createdAt))
                 text = "$statusEmoji  ${task.description}\n" +
@@ -126,23 +137,134 @@ class TaskActivity : AppCompatActivity() {
                 }
                 textSize = 13f
                 setTextColor(0xFF333333.toInt())
-                setPadding(0, 8, 0, 8)
-
-                // Status colored left border via background
-                setBackgroundColor(0x08000000)
                 compoundDrawablePadding = 8
             }
+            cardLayout.addView(tv)
 
-            // Add a small divider
-            val divider = android.view.View(this@TaskActivity).apply {
+            // Log expand indicator
+            val hasLogs = task.stepsTaken > 0
+            if (hasLogs) {
+                val expandHint = TextView(this).apply {
+                    text = if (expandedTasks.contains(task.id)) "^ Hide logs" else "v Show logs"
+                    textSize = 11f
+                    setTextColor(0xFF1565C0.toInt())
+                    setPadding(0, 4, 0, 0)
+                }
+                cardLayout.addView(expandHint)
+            }
+
+            // Expanded log container
+            val logContainer = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(0, 8, 0, 0)
+                visibility = if (expandedTasks.contains(task.id)) View.VISIBLE else View.GONE
+            }
+
+            if (expandedTasks.contains(task.id)) {
+                populateLogs(logContainer, task.id)
+            }
+            cardLayout.addView(logContainer)
+
+            // Toggle logs on click
+            cardLayout.setOnClickListener {
+                if (!hasLogs) return@setOnClickListener
+                if (expandedTasks.contains(task.id)) {
+                    expandedTasks.remove(task.id)
+                    logContainer.visibility = View.GONE
+                    logContainer.removeAllViews()
+                    // Update hint
+                    if (cardLayout.childCount >= 2) {
+                        (cardLayout.getChildAt(1) as? TextView)?.text = "v Show logs"
+                    }
+                } else {
+                    expandedTasks.add(task.id)
+                    logContainer.visibility = View.VISIBLE
+                    populateLogs(logContainer, task.id)
+                    if (cardLayout.childCount >= 2) {
+                        (cardLayout.getChildAt(1) as? TextView)?.text = "^ Hide logs"
+                    }
+                }
+            }
+
+            // Divider
+            val divider = View(this@TaskActivity).apply {
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT, 1
                 ).apply { topMargin = 4; bottomMargin = 4 }
                 setBackgroundColor(0x1A000000)
             }
 
-            layoutTaskList.addView(tv)
+            layoutTaskList.addView(cardLayout)
             layoutTaskList.addView(divider)
+        }
+    }
+
+    private fun populateLogs(container: LinearLayout, taskId: Long) {
+        container.removeAllViews()
+        val logs = taskDao.getTaskLogs(taskId)
+
+        if (logs.isEmpty()) {
+            val noLogs = TextView(this).apply {
+                text = "  No logs recorded"
+                textSize = 11f
+                setTextColor(0xFF999999.toInt())
+            }
+            container.addView(noLogs)
+            return
+        }
+
+        val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+
+        for (log in logs) {
+            val logColor = when (log.type) {
+                "thinking" -> 0xFF1565C0.toInt()  // blue
+                "tool_call" -> 0xFF2E7D32.toInt()  // green
+                "tool_result" -> 0xFF555555.toInt() // dark gray
+                "error" -> 0xFFD32F2F.toInt()       // red
+                "cancelled" -> 0xFFFF6F00.toInt()   // orange
+                "api" -> 0xFF7B1FA2.toInt()         // purple
+                "info" -> 0xFF455A64.toInt()         // blue-gray
+                "complete" -> 0xFF2E7D32.toInt()    // green
+                else -> 0xFF757575.toInt()
+            }
+
+            val typeLabel = when (log.type) {
+                "thinking" -> "AI"
+                "tool_call" -> "CALL"
+                "tool_result" -> "RESULT"
+                "error" -> "ERROR"
+                "cancelled" -> "CANCEL"
+                "api" -> "API"
+                "info" -> "INFO"
+                "complete" -> "DONE"
+                else -> log.type.uppercase()
+            }
+
+            val time = timeFormat.format(Date(log.timestamp))
+            val prefix = if (log.step > 0) "S${log.step}" else ""
+
+            val logView = TextView(this).apply {
+                text = "  $time $prefix [$typeLabel] ${log.content.take(200)}"
+                textSize = 10f
+                setTextColor(logColor)
+                typeface = Typeface.MONOSPACE
+                setPadding(0, 2, 0, 2)
+            }
+
+            // Make log entries expandable on click if content is long
+            if (log.content.length > 200) {
+                var expanded = false
+                logView.setOnClickListener {
+                    expanded = !expanded
+                    logView.text = if (expanded) {
+                        "  $time $prefix [$typeLabel] ${log.content}"
+                    } else {
+                        "  $time $prefix [$typeLabel] ${log.content.take(200)}"
+                    }
+                }
+            }
+
+            container.addView(logView)
         }
     }
 

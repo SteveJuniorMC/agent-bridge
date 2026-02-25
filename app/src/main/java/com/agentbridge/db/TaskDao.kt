@@ -134,10 +134,47 @@ class TaskDao(context: Context) {
         ).use { return it.count > 0 }
     }
 
+    // Task logs
+    fun addLog(taskId: Long, step: Int, type: String, content: String) {
+        val values = ContentValues().apply {
+            put("task_id", taskId)
+            put("step", step)
+            put("type", type)
+            put("content", content)
+            put("timestamp", System.currentTimeMillis())
+        }
+        db.writableDatabase.insert("task_logs", null, values)
+    }
+
+    fun getTaskLogs(taskId: Long): List<TaskLog> {
+        val logs = mutableListOf<TaskLog>()
+        db.readableDatabase.query(
+            "task_logs", null, "task_id = ?", arrayOf(taskId.toString()),
+            null, null, "step ASC, id ASC"
+        ).use { cursor ->
+            while (cursor.moveToNext()) {
+                logs.add(TaskLog(
+                    id = cursor.getLong(cursor.getColumnIndexOrThrow("id")),
+                    taskId = cursor.getLong(cursor.getColumnIndexOrThrow("task_id")),
+                    step = cursor.getInt(cursor.getColumnIndexOrThrow("step")),
+                    type = cursor.getString(cursor.getColumnIndexOrThrow("type")),
+                    content = cursor.getString(cursor.getColumnIndexOrThrow("content")),
+                    timestamp = cursor.getLong(cursor.getColumnIndexOrThrow("timestamp"))
+                ))
+            }
+        }
+        return logs
+    }
+
     data class Task(
         val id: Long, val description: String, val status: String,
         val result: String?, val createdAt: Long, val completedAt: Long?,
         val stepsTaken: Int
+    )
+
+    data class TaskLog(
+        val id: Long, val taskId: Long, val step: Int,
+        val type: String, val content: String, val timestamp: Long
     )
 
     data class MonitoredApp(

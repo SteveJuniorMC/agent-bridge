@@ -10,6 +10,7 @@ import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.WindowManager
+import android.widget.ImageButton
 import android.widget.ProgressBar
 import android.widget.TextView
 
@@ -22,8 +23,10 @@ class OverlayManager(private val context: Context) {
     private var overlayView: View? = null
     private val handler = Handler(Looper.getMainLooper())
     private val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+    private var currentlyTouchable = false
+    var onStopClicked: (() -> Unit)? = null
 
-    fun show(text: String, showProgress: Boolean = true) {
+    fun show(text: String, showProgress: Boolean = true, showStop: Boolean = false) {
         if (!Settings.canDrawOverlays(context)) {
             Log.w(TAG, "Overlay permission not granted")
             return
@@ -35,7 +38,11 @@ class OverlayManager(private val context: Context) {
                 overlayView?.findViewById<TextView>(R.id.overlay_text)?.text = text
                 overlayView?.findViewById<ProgressBar>(R.id.overlay_progress)?.visibility =
                     if (showProgress) View.VISIBLE else View.GONE
+                overlayView?.findViewById<ImageButton>(R.id.overlay_stop)?.visibility =
+                    if (showStop) View.VISIBLE else View.GONE
                 overlayView?.visibility = View.VISIBLE
+
+                setTouchable(showStop)
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to show overlay: ${e.message}")
             }
@@ -61,6 +68,26 @@ class OverlayManager(private val context: Context) {
         }
     }
 
+    private fun setTouchable(touchable: Boolean) {
+        if (currentlyTouchable == touchable || overlayView == null) return
+        currentlyTouchable = touchable
+
+        val params = overlayView?.layoutParams as? WindowManager.LayoutParams ?: return
+        params.flags = if (touchable) {
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
+        } else {
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or
+                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
+        }
+        try {
+            windowManager.updateViewLayout(overlayView, params)
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to update overlay flags: ${e.message}")
+        }
+    }
+
     private fun createOverlay() {
         val params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.MATCH_PARENT,
@@ -72,8 +99,14 @@ class OverlayManager(private val context: Context) {
             PixelFormat.TRANSLUCENT
         )
         params.gravity = Gravity.TOP
+        currentlyTouchable = false
 
         overlayView = LayoutInflater.from(context).inflate(R.layout.overlay_status, null)
+
+        overlayView?.findViewById<ImageButton>(R.id.overlay_stop)?.setOnClickListener {
+            onStopClicked?.invoke()
+        }
+
         windowManager.addView(overlayView, params)
     }
 }

@@ -39,6 +39,7 @@ class AgentLoop(private val context: Context) {
     private val taskQueue = ConcurrentLinkedQueue<AgentTask>()
     private val isRunning = AtomicBoolean(false)
     private val isProcessing = AtomicBoolean(false)
+    private val isCancelled = AtomicBoolean(false)
     private var statusListener: StatusListener? = null
     private var loopThread: Thread? = null
 
@@ -76,9 +77,17 @@ class AgentLoop(private val context: Context) {
 
     fun stop() {
         isRunning.set(false)
+        isCancelled.set(true)
         loopThread?.interrupt()
         loopThread = null
         Log.i(TAG, "Agent loop stopped")
+    }
+
+    fun cancelCurrentTask() {
+        if (isProcessing.get()) {
+            isCancelled.set(true)
+            Log.i(TAG, "Current task cancellation requested")
+        }
     }
 
     fun enqueueNotification(contact: String, message: String, platform: String, notificationKey: String?) {
@@ -133,8 +142,17 @@ class AgentLoop(private val context: Context) {
     val queueSize: Int get() = taskQueue.size
     val isActive: Boolean get() = isRunning.get()
 
+    private fun log(taskId: Long, step: Int, type: String, content: String) {
+        try {
+            taskDao.addLog(taskId, step, type, content)
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to save log: ${e.message}")
+        }
+    }
+
     private fun processTask(task: AgentTask) {
         isProcessing.set(true)
+        isCancelled.set(false)
         taskDao.updateTaskStatus(task.id, "running")
         statusListener?.onTaskStarted(task)
 
@@ -156,6 +174,8 @@ class AgentLoop(private val context: Context) {
             failTask(task, "No API key configured")
             return
         }
+
+        log(task.id, 0, "info", "Task started | Model: $model | Type: ${task.type}")
 
         val client = OpenRouterClient(apiKey, model)
         val systemPrompt = promptBuilder.build(
@@ -179,19 +199,29 @@ class AgentLoop(private val context: Context) {
         var steps = 0
         var done = false
 
-        while (steps < MAX_STEPS && !done && isRunning.get()) {
+        while (steps < MAX_STEPS && !done && isRunning.get() && !isCancelled.get()) {
             steps++
             taskDao.incrementSteps(task.id)
 
             val queueInfo = if (taskQueue.size > 0) " (${taskQueue.size} queued)" else ""
             statusListener?.onStatusChanged("Step $steps — Thinking...$queueInfo")
 
+            val stepStartTime = System.currentTimeMillis()
+
             try {
                 val response = client.chat(messages, tools)
+                val apiDuration = System.currentTimeMillis() - stepStartTime
+
+                // Log token usage and timing
+                val usageInfo = if (response.usage != null) {
+                    "Tokens: ${response.usage.promptTokens}in/${response.usage.completionTokens}out/${response.usage.totalTokens}total"
+                } else "No usage data"
+                log(task.id, steps, "api", "API call: ${apiDuration}ms | $usageInfo | finish=${response.finishReason}")
 
                 // Handle content response
                 if (response.content != null) {
                     Log.d(TAG, "AI content: ${response.content.take(200)}")
+                    log(task.id, steps, "thinking", response.content)
                 }
 
                 // Handle tool calls
@@ -204,14 +234,24 @@ class AgentLoop(private val context: Context) {
                     ))
 
                     for (toolCall in response.toolCalls) {
+                        if (isCancelled.get()) {
+                            log(task.id, steps, "cancelled", "Task cancelled by user during tool execution")
+                            break
+                        }
+
                         val toolName = toolCall.function.name
                         val toolArgs = toolCall.function.arguments
 
                         Log.d(TAG, "Executing tool: $toolName($toolArgs)")
+                        log(task.id, steps, "tool_call", "$toolName($toolArgs)")
                         statusListener?.onStatusChanged("Executing: $toolName$queueInfo")
 
+                        val toolStartTime = System.currentTimeMillis()
                         val result = toolExecutor.execute(toolName, toolArgs, task.id)
+                        val toolDuration = System.currentTimeMillis() - toolStartTime
+
                         Log.d(TAG, "Tool result: ${result.toString().take(200)}")
+                        log(task.id, steps, "tool_result", "$toolName (${toolDuration}ms): ${result.toString().take(500)}")
 
                         // Add tool result message
                         messages.add(OpenRouterClient.ChatMessage(
@@ -228,7 +268,6 @@ class AgentLoop(private val context: Context) {
                         }
 
                         // Save outgoing message if we typed/sent something
-                        // (reply_notification saves its own messages via ToolExecutor)
                         if (toolName == "type_text" && task.contact != null) {
                             val typedText = try {
                                 com.google.gson.Gson().fromJson(toolArgs, Map::class.java)["text"]?.toString()
@@ -258,7 +297,9 @@ class AgentLoop(private val context: Context) {
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Error in agent loop step $steps", e)
-                failTask(task, "Error: ${e.message}")
+                val errorDetail = "Step $steps error: ${e.javaClass.simpleName}: ${e.message}"
+                log(task.id, steps, "error", errorDetail)
+                failTask(task, errorDetail)
                 done = true
             }
 
@@ -268,7 +309,11 @@ class AgentLoop(private val context: Context) {
             }
         }
 
-        if (!done && steps >= MAX_STEPS) {
+        if (isCancelled.get() && !done) {
+            log(task.id, steps, "cancelled", "Task cancelled by user")
+            failTask(task, "Cancelled by user")
+        } else if (!done && steps >= MAX_STEPS) {
+            log(task.id, steps, "error", "Reached max steps limit ($MAX_STEPS)")
             failTask(task, "Max steps ($MAX_STEPS) reached")
         }
 
@@ -280,6 +325,7 @@ class AgentLoop(private val context: Context) {
 
         client.shutdown()
         isProcessing.set(false)
+        isCancelled.set(false)
 
         if (taskQueue.isEmpty()) {
             statusListener?.onStatusChanged("Idle — monitoring notifications", showProgress = false)
@@ -288,6 +334,7 @@ class AgentLoop(private val context: Context) {
 
     private fun completeTask(task: AgentTask, summary: String) {
         taskDao.updateTaskStatus(task.id, "completed", summary)
+        log(task.id, 0, "complete", summary)
         statusListener?.onTaskCompleted(task, summary)
         Log.i(TAG, "Task completed: $summary")
     }

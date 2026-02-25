@@ -46,6 +46,10 @@ class AgentForegroundService : Service(), AgentLoop.StatusListener {
         agentLoop = AgentLoop(this)
         agentLoop.setStatusListener(this)
         overlayManager = OverlayManager(this)
+        overlayManager.onStopClicked = {
+            Log.i(TAG, "Stop button pressed")
+            agentLoop.cancelCurrentTask()
+        }
         Log.i(TAG, "Foreground service created")
     }
 
@@ -86,7 +90,7 @@ class AgentForegroundService : Service(), AgentLoop.StatusListener {
 
     // StatusListener callbacks
     override fun onStatusChanged(status: String, showProgress: Boolean) {
-        overlayManager.show(status, showProgress)
+        overlayManager.show(status, showProgress, showStop = showProgress)
         updateNotification(status)
     }
 
@@ -95,7 +99,7 @@ class AgentForegroundService : Service(), AgentLoop.StatusListener {
             AgentLoop.TaskType.NOTIFICATION -> "Replying to ${task.contact} on ${task.platform}..."
             AgentLoop.TaskType.MANUAL -> "Working: ${task.description.take(40)}..."
         }
-        overlayManager.show(status)
+        overlayManager.show(status, showStop = true)
         updateNotification(status)
     }
 
