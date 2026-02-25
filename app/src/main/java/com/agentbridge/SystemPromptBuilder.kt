@@ -21,16 +21,43 @@ class SystemPromptBuilder(private val context: Context) {
         val time = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault())
             .format(java.util.Date())
 
+        // Build conversation history including linked contacts
         val conversationHistory = if (contactName != null) {
-            val messages = dao.getConversation(contactName, limit = 15)
-            if (messages.isNotEmpty()) {
-                messages.joinToString("\n") { msg ->
-                    val dir = if (msg.direction == "incoming") contactName else "You"
-                    val plat = if (msg.platform != platform) " (${msg.platform})" else ""
-                    "[$dir$plat]: ${msg.content}"
+            val allMessages = mutableListOf<ConversationDao.Message>()
+
+            // Get messages for this contact (all platforms)
+            allMessages.addAll(dao.getConversation(contactName, limit = 15))
+
+            // Get messages from linked contacts
+            val linked = if (platform != null) dao.getLinkedContacts(contactName, platform) else emptyList()
+            for (link in linked) {
+                allMessages.addAll(dao.getConversation(link.name, link.platform, limit = 10))
+            }
+
+            // Sort by timestamp and take most recent
+            val sorted = allMessages.sortedBy { it.timestamp }.takeLast(20)
+
+            if (sorted.isNotEmpty()) {
+                sorted.joinToString("\n") { msg ->
+                    val sender = if (msg.direction == "incoming") {
+                        if (msg.contact == contactName) contactName
+                        else "${msg.contact} (${msg.platform})"
+                    } else "You"
+                    val plat = if (msg.platform != platform && msg.contact == contactName) " (${msg.platform})" else ""
+                    "[$sender$plat]: ${msg.content}"
                 }
             } else "No previous conversation history."
         } else "N/A"
+
+        // Build known contacts list
+        val recentContacts = dao.getRecentContacts(30)
+        val knownContactsList = if (recentContacts.isNotEmpty()) {
+            val timeFormat = java.text.SimpleDateFormat("MMM dd", java.util.Locale.getDefault())
+            recentContacts.joinToString("\n") { c ->
+                val lastActive = timeFormat.format(java.util.Date(c.lastTimestamp))
+                "- ${c.contact} (${c.platform}) — last active $lastActive, ${c.messageCount} messages"
+            }
+        } else null
 
         return buildString {
             appendLine("You are an AI assistant operating a phone.")
@@ -48,6 +75,12 @@ class SystemPromptBuilder(private val context: Context) {
             appendLine("- Active app: $foregroundApp")
             appendLine("- Trigger: $triggerDescription")
             appendLine()
+
+            if (knownContactsList != null) {
+                appendLine("## Known contacts:")
+                appendLine(knownContactsList)
+                appendLine()
+            }
 
             if (contactName != null) {
                 appendLine("## Conversation history with $contactName on ${platform ?: "unknown"}:")
@@ -71,6 +104,11 @@ class SystemPromptBuilder(private val context: Context) {
             appendLine("- If you sent a message, verify it actually sent (check the screen)")
             appendLine("- If something didn't work (e.g. pressing Enter added a newline instead of sending), try a different approach")
             appendLine("- NEVER mark a reply complete unless you have confirmed the message was sent")
+            appendLine()
+            appendLine("## Cross-platform contacts:")
+            appendLine("- If someone says they're the same person from another platform (e.g. 'it's kyle from reddit'),")
+            appendLine("  check the known contacts list above to find the matching username on that platform")
+            appendLine("- Use link_contacts to save the connection — their history will be merged in future conversations")
             appendLine()
             appendLine("## Replying to messages:")
             appendLine("- ALWAYS try reply_notification first — it's instant and reliable")

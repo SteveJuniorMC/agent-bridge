@@ -81,6 +81,7 @@ class ToolExecutor(private val context: Context) {
 
                 // Memory
                 "get_conversation" -> executeGetConversation(params)
+                "link_contacts" -> executeLinkContacts(params)
                 "save_note" -> executeSaveNote(params)
                 "get_note" -> executeGetNote(params)
 
@@ -123,6 +124,18 @@ class ToolExecutor(private val context: Context) {
         result.add("messages", msgArray)
         result.addProperty("count", messages.size)
         return result
+    }
+
+    private fun executeLinkContacts(params: Map<String, Any>): JsonObject {
+        val name1 = params["name1"]?.toString() ?: return error("Missing param: name1")
+        val platform1 = params["platform1"]?.toString() ?: return error("Missing param: platform1")
+        val name2 = params["name2"]?.toString() ?: return error("Missing param: name2")
+        val platform2 = params["platform2"]?.toString() ?: return error("Missing param: platform2")
+        dao.linkContacts(name1, platform1, name2, platform2)
+        return JsonObject().apply {
+            addProperty("success", true)
+            addProperty("message", "Linked $name1 ($platform1) with $name2 ($platform2)")
+        }
     }
 
     private fun executeSaveNote(params: Map<String, Any>): JsonObject {

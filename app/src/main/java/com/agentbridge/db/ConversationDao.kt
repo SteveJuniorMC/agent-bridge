@@ -107,6 +107,45 @@ class ConversationDao(context: Context) {
         return null
     }
 
+    // Contact linking
+    fun linkContacts(name1: String, platform1: String, name2: String, platform2: String) {
+        // Check if link already exists in either direction
+        val existing = db.readableDatabase.rawQuery(
+            """SELECT id FROM contact_links
+               WHERE (name1 = ? AND platform1 = ? AND name2 = ? AND platform2 = ?)
+                  OR (name1 = ? AND platform1 = ? AND name2 = ? AND platform2 = ?)""",
+            arrayOf(name1, platform1, name2, platform2, name2, platform2, name1, platform1)
+        ).use { it.count > 0 }
+
+        if (existing) return
+
+        val values = ContentValues().apply {
+            put("name1", name1)
+            put("platform1", platform1)
+            put("name2", name2)
+            put("platform2", platform2)
+            put("created_at", System.currentTimeMillis())
+        }
+        db.writableDatabase.insert("contact_links", null, values)
+    }
+
+    data class LinkedContact(val name: String, val platform: String)
+
+    fun getLinkedContacts(name: String, platform: String): List<LinkedContact> {
+        val linked = mutableListOf<LinkedContact>()
+        db.readableDatabase.rawQuery(
+            """SELECT name2, platform2 FROM contact_links WHERE name1 = ? AND platform1 = ?
+               UNION
+               SELECT name1, platform1 FROM contact_links WHERE name2 = ? AND platform2 = ?""",
+            arrayOf(name, platform, name, platform)
+        ).use { cursor ->
+            while (cursor.moveToNext()) {
+                linked.add(LinkedContact(cursor.getString(0), cursor.getString(1)))
+            }
+        }
+        return linked
+    }
+
     fun saveNote(key: String, value: String) {
         val values = ContentValues().apply {
             put("key", key)

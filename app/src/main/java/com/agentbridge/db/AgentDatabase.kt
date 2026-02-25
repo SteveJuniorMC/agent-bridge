@@ -8,7 +8,7 @@ class AgentDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, null,
 
     companion object {
         private const val DB_NAME = "agent_bridge.db"
-        private const val DB_VERSION = 2
+        private const val DB_VERSION = 3
 
         @Volatile
         private var instance: AgentDatabase? = null
@@ -97,12 +97,25 @@ class AgentDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, null,
             )
         """)
 
+        db.execSQL("""
+            CREATE TABLE contact_links (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name1 TEXT NOT NULL,
+                platform1 TEXT NOT NULL,
+                name2 TEXT NOT NULL,
+                platform2 TEXT NOT NULL,
+                created_at INTEGER NOT NULL
+            )
+        """)
+
         // Indexes
         db.execSQL("CREATE INDEX idx_messages_contact ON messages(contact, platform)")
         db.execSQL("CREATE INDEX idx_messages_timestamp ON messages(timestamp)")
         db.execSQL("CREATE INDEX idx_tasks_status ON tasks(status)")
         db.execSQL("CREATE INDEX idx_audit_timestamp ON audit_log(timestamp)")
         db.execSQL("CREATE INDEX idx_task_logs_task ON task_logs(task_id, step)")
+        db.execSQL("CREATE INDEX idx_contact_links_1 ON contact_links(name1, platform1)")
+        db.execSQL("CREATE INDEX idx_contact_links_2 ON contact_links(name2, platform2)")
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
@@ -119,6 +132,20 @@ class AgentDatabase(context: Context) : SQLiteOpenHelper(context, DB_NAME, null,
                 )
             """)
             db.execSQL("CREATE INDEX IF NOT EXISTS idx_task_logs_task ON task_logs(task_id, step)")
+        }
+        if (oldVersion < 3) {
+            db.execSQL("""
+                CREATE TABLE IF NOT EXISTS contact_links (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name1 TEXT NOT NULL,
+                    platform1 TEXT NOT NULL,
+                    name2 TEXT NOT NULL,
+                    platform2 TEXT NOT NULL,
+                    created_at INTEGER NOT NULL
+                )
+            """)
+            db.execSQL("CREATE INDEX IF NOT EXISTS idx_contact_links_1 ON contact_links(name1, platform1)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS idx_contact_links_2 ON contact_links(name2, platform2)")
         }
     }
 }

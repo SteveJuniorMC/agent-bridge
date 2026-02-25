@@ -88,6 +88,12 @@ object ToolRegistry {
                 requiredString("contact", "Contact name")
                 optionalString("platform", "Platform filter (whatsapp, sms, telegram, etc.)")
             },
+            tool("link_contacts", "Link two contacts that are the same person across different platforms. Use this when someone identifies themselves across platforms (e.g. 'hi it's kyle from reddit'). Check the known contacts list in your system prompt to find the matching username.") {
+                requiredString("name1", "Contact name on first platform (as it appears in notifications)")
+                requiredString("platform1", "First platform (e.g. reddit, whatsapp, telegram)")
+                requiredString("name2", "Contact name on second platform")
+                requiredString("platform2", "Second platform")
+            },
             tool("save_note", "Save arbitrary data for later retrieval") {
                 requiredString("key", "Note key/name")
                 requiredString("value", "Note content")
